@@ -1,7 +1,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "Tasks/apps_implausibility_check_task.h"
-#include "app.h"
 
 // Task: APPS Implausibility Check
 
@@ -14,13 +13,13 @@ void apps_implausibility_check_task(void *argument) {
     }
 }
 
-TaskHandle_t create_apps_implausibility_check_task(void) {
+TaskHandle_t create_apps_implausibility_check_task(app_data *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         apps_implausibility_check_task,            // Task function
         "APPS Implausibility Check",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
-        NULL,                    // Task parameters
+        data,                    // Task parameters
         APPS_PRIO,               // Priority (adjust as needed)
         &handle                  // Task handle
     );

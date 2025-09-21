@@ -3,6 +3,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "app.h"
 
 // Task function
 void can_receiver_task(void *argument);

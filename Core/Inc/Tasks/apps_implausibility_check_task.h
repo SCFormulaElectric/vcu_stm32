@@ -3,6 +3,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "app.h"
 
 // Task function
 void apps_implausibility_check_task(void *argument);
