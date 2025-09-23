@@ -20,7 +20,7 @@
 app_data app;
 
 void create_app(){
-    if(app.startup_mode = ALL) {
+    if(app.startup_mode == ALL) {
         assert((app.apps_implausibility_check_task_handle = create_apps_implausibility_check_task()) != NULL);
         assert((app.brake_pedal_plausibility_check_task_handle = create_brake_pedal_plausibility_check_task()) != NULL);
         assert((app.can_receiver_task_handle = create_can_receiver_task()) != NULL);
@@ -36,7 +36,7 @@ void create_app(){
         assert((app.state_machine_task_handle = create_state_machine_task()) != NULL);
         assert((app.telemetry_task_handle = create_telemetry_task()) != NULL);
     }
-    else if(app.startup_mode = CLI_ONLY) {
+    else if(app.startup_mode == CLI_ONLY) {
 	// Create and assert each task handle
         assert((app.cli_input_task_handle = create_cli_input_task()) != NULL);
     }
