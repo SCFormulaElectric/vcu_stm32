@@ -1,29 +1,77 @@
 #include "Tasks/motor_controller_task.h"
+#include "app.h"
 
 // Task: Motor Controller
 
 void motor_controller_task(void *argument) {
-    app_data *data = (app_data *) argument;
+    app_data *data = (app_data *)argument;
     MotorControl_t *motorControl = &data->motorControl;
     QueueHandle_t can_tx_queue = data->can_tx_queue;
 
+    TickType_t start = xTaskGetTickCount();
+
+    bool disabled_sent = true;
+    motorControl->lastTorqueCommand = 0;
+
     for (;;) {
-        TickType_t start = xTaskGetTickCount();
-        uint16_t throttle = data->getThrottle();
-        if(!motorControl->enabled || motorControl->fault) {
+        int32_t throttle = (int32_t)getThrottle();  
+        // Check if motor control is enabled and no faults
+        if (!motorControl->enabled || motorControl->fault) {
+            if (!disabled_sent) {
+                can_message_t free_roll = create_motor_controller_command(0, 0, 0, true, false, false, false);
+                (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
+                motorControl->lastTorqueCommand = 0;
+                disabled_sent = true;
+            }
+            vTaskDelayUntil(&start, pdMS_TO_TICKS(1000 / motor_control_FREQ));
+            continue;
         }
-        else {
-            if (throttle < 0 || throttle > 1400) throttle = 0;
-            if (throttle > 1000 && throttle < 1300) throttle = 1000;
 
-            uint16_t torque = (throttle * MAX_TORQUE * 10) / 1000; // must send torque x 10. 300nm requires sending a value of 3000
-            can_message_t torque_command = create_motor_controller_command(torque, 0, Forward, 1, 0, 0, 0);
-
-            if (xQueueSend(can_tx_queue, &torque_command, pdMS_TO_TICKS(10)) != pdPASS) {
-                //error checking
+        //Handle operation states
+        if (motorControl->opState == throttle_error || motorControl->opState == plausibility_error) {
+            if (!disabled_sent) {
+                can_message_t free_roll = create_motor_controller_command(0, 0, 0, true, false, false, false);
+                (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
+                motorControl->lastTorqueCommand = 0;
+                disabled_sent = true;
             }
         }
-        vTaskDelayUntil(&start, pdMS_TO_TICKS(1000/motor_control_FREQ));
+
+        // Normal operation
+        else if (motorControl->opState == enabled) {
+            if (extern_curr_state == S2) {
+                if (throttle < 0 || throttle > 1400) throttle = 0;
+                else if (throttle > 1000 && throttle < 1300) throttle = 1000;
+
+                if (throttle <= 200) {
+                    if (!disabled_sent) {
+                        can_message_t free_roll = create_motor_controller_command(0, 0, 0, true, false, false, false);
+                        (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
+                        motorControl->lastTorqueCommand = 0;
+                        disabled_sent = true;
+                    }
+                } else {
+                    uint16_t torque_x10 = (uint16_t)((throttle * MAX_TORQUE * 10) / 1000);
+
+                    if (disabled_sent || (torque_x10 != motorControl->lastTorqueCommand)) {
+                        can_message_t torque_cmd = create_motor_controller_command(torque_x10, 0, 0, true, true, false, false);
+                        if (xQueueSend(can_tx_queue, &torque_cmd, pdMS_TO_TICKS(5)) == pdPASS) {
+                            motorControl->lastTorqueCommand = torque_x10;
+                            disabled_sent = false;
+                        } 
+                    }
+                }
+            } else {
+                if (!disabled_sent) {
+                    can_message_t free_roll = create_motor_controller_command(0, 0, 0, true, false, false, false);
+                    (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
+                    motorControl->lastTorqueCommand = 0;
+                    disabled_sent = true;
+                }
+            }
+        } 
+
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(1000 / motor_control_FREQ));
     }
 }
 

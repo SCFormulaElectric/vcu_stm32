@@ -4,7 +4,7 @@
 #define MCT_PRIO  10
 #define CAN_receiver_task_PRIO 10
 #define Cooling_PRIO 10
-#define LC_PRIO10
+#define LC_PRIO 10
 #define CAN_transceiver_task_PRIO 10
 #define telemetry_task_PRIO 6
 #define state_machine_PRIO 6
@@ -35,14 +35,19 @@ typedef struct {
 	uint16_t INV_Hot_Spot_Temp_Inverter;// 2-3
 	uint16_t INV_Motor_Temp;			// 4-5
 	uint16_t INV_Torque_Shudder;		// 6-7
-} MC_temp_t
+} MC_temp_t;
 
+	typedef	enum {
+		enabled,
+		throttle_error,
+		plausibility_error
+	} mc_state_t;
 
-typedef z
 typedef struct {
 	bool enabled;
     bool fault;
-	uint8_t  opState; // speed, torque etc?
+	bool plaus_fault;
+	mc_state_t  opState; // speed, torque etc?
     uint16_t torqueCommand;
     uint16_t lastTorqueCommand;
     uint16_t voltage;
@@ -51,12 +56,21 @@ typedef struct {
     uint16_t inverter_state;
 	MC_temp_t temp;
 	//etc
+
 } MotorControl_t;
+
+typedef enum {
+    S0,
+	S1,
+	S2
+} system_state_t;
+
+extern volatile system_state_t extern_curr_state;
 
 typedef struct {
     CAN_HandleTypeDef *hcan;
     CAN_TxHeaderTypeDef *tx_header;
-    CAN_TxHeaderTypeDef *rx_header;
+    CAN_RxHeaderTypeDef *rx_header;
     uint8_t  rx_packet[8];
     uint8_t  tx_packet[8];
     uint32_t tx_mailbox;
@@ -83,7 +97,7 @@ typedef struct{
 	TaskHandle_t sd_card_task_handle;
 	TaskHandle_t state_machine_task_handle;
 	TaskHandle_t telemetry_task_handle;
-    StartUpMode  startup_mode = ALL;
+    StartUpMode  startup_mode;
 
 	canbus_t     canbus;
 	QueueHandle_t can_tx_queue;
@@ -92,6 +106,6 @@ typedef struct{
 	MotorControl_t motorControl;
 } app_data;
 
-void create_app();
+void create_app(void);
 
 uint16_t getThrottle();
