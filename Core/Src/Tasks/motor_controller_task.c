@@ -115,3 +115,23 @@ can_message_t create_motor_controller_command(
 mode. Some limiting functions act upon the receipt of the command and may not work properly if
 significant time exists between CAN commands. i.e. > 1 [s].*/
 /*default range of CAN message IDs is 0x0A0 – 0x0CF*/
+
+can_message_t create_motor_controller_rw_command(
+    uint16_t param_addr, //Bytes 0-1
+    bool     rw,         //Bytes 2
+    uint16_t data,       //Bytes 4-5
+    )   
+{
+    can_message_t rw_command;
+    rw_command.tx_id = 0x0C1;
+    rw_command.tx_packet[0] = torque & 0xFF;        //lower
+    rw_command.tx_packet[1] = (torque >> 8) & 0xFF; //upper
+    rw_command.tx_packet[2] = speed & 0xFF;         //lower
+    rw_command.tx_packet[3] = (speed >> 8) & 0xFF;  //upper
+    rw_command.tx_packet[4] = direction;            //0-reverse 1-forward
+    rw_command.tx_packet[5] = inverter_en;   
+    rw_command.tx_packet[6] = inverter_discharge;   
+    rw_command.tx_packet[7] = speed_mode_enable;   
+
+    return rw_command;
+}

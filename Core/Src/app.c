@@ -18,6 +18,7 @@
 
 
 app_data app;
+car_data car;
 
 void create_app(){
     if(app.startup_mode == ALL) {

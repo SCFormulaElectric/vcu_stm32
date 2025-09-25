@@ -1,3 +1,4 @@
+#include "motor_control.h"
 #define BPPS_PRIO 13
 #define APPS_PRIO 13
 #define IWT_PRIO  13
@@ -11,9 +12,9 @@
 #define dash_PRIO 6
 #define sd_card_PRIO 6
 #define cli_input_PRIO 6
-
-#define motor_control_FREQ 40 //10-50 milisecond is required. 1000/40 = 25
+#define motor_control_interval 25 //10-50 milisecond is required.
 #define MAX_TORQUE 300 
+
 enum StartUpMode {
     ALL,
     CLI_ONLY
@@ -74,6 +75,8 @@ typedef struct {
     uint8_t  rx_packet[8];
     uint8_t  tx_packet[8];
     uint32_t tx_mailbox;
+	QueueHandle_t can_tx_queue;
+	QueueHandle_t can_rx_queue;
 } canbus_t;
 
 typedef struct {
@@ -99,13 +102,14 @@ typedef struct{
 	TaskHandle_t telemetry_task_handle;
     StartUpMode  startup_mode;
 
-	canbus_t     canbus;
-	QueueHandle_t can_tx_queue;
-	QueueHandle_t can_rx_queue;
-
-	MotorControl_t motorControl;
+	car_data_t car_data;
 } app_data;
 
-void create_app(void);
+typedef struct {
+	canbus_t canbus;
+	MotorControl_t motor_control;
+} car_data_t
+
+void create_app();
 
 uint16_t getThrottle();
