@@ -48,6 +48,13 @@ typedef struct{
     StartUpMode  startup_mode;
 
 	car_data_t car_data;
+	canbus_t     canbus;
+	QueueHandle_t can_tx_queue;
+	QueueHandle_t can_rx_queue;
+
+	MotorControl_t motorControl;
+
+	bool brake_engaged;
 } app_data;
 
 typedef struct {
