@@ -1,4 +1,5 @@
 #include "motor_control.h"
+#include "canbus.h"
 #define BPPS_PRIO 13
 #define APPS_PRIO 13
 #define IWT_PRIO  13
@@ -20,46 +21,6 @@ enum StartUpMode {
     CLI_ONLY
 };
 
-typedef struct {
-	//Temperature 1
-	uint16_t INV_Module_A_Temp;     	// 0-1
-	uint16_t INV_Module_B_Temp;			// 2-3
-	uint16_t INV_Module_C_Temp;			// 4-5
-	uint16_t INV_GDB_Temp;				// 6-7
-	//Temperature 2
-	uint16_t INV_Control_Board_Temp;	// 0-1
-	uint16_t INV_RTD1_Temperature;		// 2-3
-	uint16_t INV_RTD2_Temperature;		// 4-5
-	uint16_t INV_Hot_Spot_Temp_Motor;	// 6-7
-	//Temperature 3
-	uint16_t INV_Coolant_Temp;			// 0-1
-	uint16_t INV_Hot_Spot_Temp_Inverter;// 2-3
-	uint16_t INV_Motor_Temp;			// 4-5
-	uint16_t INV_Torque_Shudder;		// 6-7
-} MC_temp_t;
-
-	typedef	enum {
-		enabled,
-		throttle_error,
-		plausibility_error
-	} mc_state_t;
-
-typedef struct {
-	bool enabled;
-    bool fault;
-	bool plaus_fault;
-	mc_state_t  opState; // speed, torque etc?
-    uint16_t torqueCommand;
-    uint16_t lastTorqueCommand;
-    uint16_t voltage;
-    uint16_t motor_speed;
-    uint16_t actual_torque;
-    uint16_t inverter_state;
-	MC_temp_t temp;
-	//etc
-
-} MotorControl_t;
-
 typedef enum {
     S0,
 	S1,
@@ -67,22 +28,6 @@ typedef enum {
 } system_state_t;
 
 extern volatile system_state_t extern_curr_state;
-
-typedef struct {
-    CAN_HandleTypeDef *hcan;
-    CAN_TxHeaderTypeDef *tx_header;
-    CAN_RxHeaderTypeDef *rx_header;
-    uint8_t  rx_packet[8];
-    uint8_t  tx_packet[8];
-    uint32_t tx_mailbox;
-	QueueHandle_t can_tx_queue;
-	QueueHandle_t can_rx_queue;
-} canbus_t;
-
-typedef struct {
-    uint32_t tx_id;
-    uint8_t  tx_packet[8];
-} can_message_t;
 
 typedef struct{
 	// Task handles
@@ -111,5 +56,4 @@ typedef struct {
 } car_data_t
 
 void create_app();
-
 uint16_t getThrottle();

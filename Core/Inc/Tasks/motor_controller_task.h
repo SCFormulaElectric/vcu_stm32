@@ -7,6 +7,12 @@
 #define Forward  1
 #define Backward 0
 
+enum {
+    STATE_DISABLE,
+    STATE_ENABLE,
+    STATE_WAIT,
+} state_t;
+
 // Task function
 void motor_controller_task(void *argument);
 

@@ -1,9 +1,17 @@
 #include <stdint.h>
 
+#define CAN_Command_Message_Lost_Fault 0x00000800;
+
+typedef	enum {
+	enabled,
+	throttle_error,
+	plausibility_error
+} mc_error_t;
+
 typedef struct {
 	bool enabled;
     bool fault;
-	uint8_t  opState; // speed, torque etc?
+	mc_error_t  opState;
     uint16_t torqueCommand;
     uint16_t lastTorqueCommand;
     uint16_t voltage;
@@ -28,6 +36,9 @@ typedef struct {
 	diagnostic_data_t diagnostic_data;
 	high_speed_msg_t high_speed_msg;
 	torque_capability_t torque_capability;
+
+	//Parameter Response
+	parameter_response_t param_response;
 } MotorControl_t;
 
 //0x0A0-0x0A2
@@ -238,3 +249,12 @@ typedef struct {
 	uint16_t reserved1;              // Bytes 4-5: NA
 	uint16_t reserved2;              // Bytes 6-7: NA
 } torque_capability_t;
+
+//0x0C2
+typedef struct {
+	uint16_t Parameter_Address;
+	bool Write_Success;
+	uint16_t Data;
+} parameter_response_t
+
+bool is_fault(const fault_codes_t *faults);
