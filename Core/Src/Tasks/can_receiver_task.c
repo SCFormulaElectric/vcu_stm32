@@ -5,7 +5,7 @@
 // Task: CAN Receiver
 
 void can_receiver_task(void *argument) {
-    app_data_t *data = (app_data_t *) argument;
+    volatile app_data_t *data = (app_data_t *) argument;
     QueueHandle_t queue = data->can_rx_queue;
     can_message_t msg;
     for (;;) {

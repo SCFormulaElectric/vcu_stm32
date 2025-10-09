@@ -1,12 +1,29 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "Tasks/brake_pedal_plausibility_check_task.h"
+#include "app.h"
 
 // Task: Brake Pedal Plausibility Check
 
 void brake_pedal_plausibility_check_task(void *argument) {
+    volatile app_data *data = (app_data *) argument;
+    MotorControl_t *motorControl = &data->motorControl;
+
+    TickType_t start = xTaskGetTickCount();
+
     for (;;) {
-        // TODO: Implement Brake Pedal Plausibility Check functionality
+        int16_t throttle = (int16_t)getThrottle();
+        // Check to see if it is pressed, currently at 10%
+        bool brake_engaged = data->brake_level > 100;
+        if (throttle > 250 && brake_engaged) {
+            motorControl->plaus_fault = true;
+            motorControl->opState = plausibility_error;
+        } else if (throttle < 50) {
+            if (!motorControl->fault) { // Only reset if no other fault exists
+                motorControl->plaus_fault = false;
+                motorControl->opState = enabled;
+            }
+        }     
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

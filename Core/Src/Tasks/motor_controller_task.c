@@ -4,7 +4,7 @@
 // Task: Motor Controller
 
 void motor_controller_task(void *argument) {
-    app_data *data = (app_data *)argument;
+    volatile app_data *data = (app_data *)argument;
     MotorControl_t *motorControl = &data->motorControl;
     QueueHandle_t can_tx_queue = data->can_tx_queue;
 
@@ -19,7 +19,7 @@ void motor_controller_task(void *argument) {
     for (;;) {
         switch(task_state) {
             case STATE_ENABLE:
-                nt16_t throttle = (int16_t)getThrottle();  
+                uint16_t throttle = (int16_t)getThrottle();  
                 //Checks for faults
                 else if (motorControl->opState == throttle_error || motorControl->opState == plausibility_error || is_fault(motorControl->fault)) {
                         (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));

@@ -31,7 +31,7 @@ extern volatile system_state_t extern_curr_state;
 
 typedef struct{
 	// Task handles
-	TaskHandle_t apps_implausibility_check_task_handle;
+	TaskHandle_t throttle_task_handle;
 	TaskHandle_t brake_pedal_plausibility_check_task_handle;
 	TaskHandle_t can_receiver_task_handle;
 	TaskHandle_t can_transceiver_task_handle;
@@ -54,7 +54,9 @@ typedef struct{
 
 	MotorControl_t motorControl;
 
-	bool brake_engaged;
+	uint16_t throttle_level;
+	uint16_t brake_level;
+
 } app_data;
 
 typedef struct {

@@ -1,7 +1,7 @@
 #include "app.h"
 
 // Task includes
-#include "Tasks/apps_implausibility_check_task.h"
+#include "Tasks/throttle_task.h"
 #include "Tasks/brake_pedal_plausibility_check_task.h"
 #include "Tasks/can_receiver_task.h"
 #include "Tasks/can_transceiver_task.h"
@@ -22,7 +22,7 @@ car_data car;
 
 void create_app(){
     if(app.startup_mode == ALL) {
-        assert((app.apps_implausibility_check_task_handle = create_apps_implausibility_check_task()) != NULL);
+        assert((app.throttle_task_handle = create_throttle_task()) != NULL);
         assert((app.brake_pedal_plausibility_check_task_handle = create_brake_pedal_plausibility_check_task()) != NULL);
         assert((app.can_receiver_task_handle = create_can_receiver_task()) != NULL);
         assert((app.can_transceiver_task_handle = create_can_transceiver_task()) != NULL);
