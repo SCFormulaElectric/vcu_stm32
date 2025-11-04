@@ -15,7 +15,7 @@ void brake_pedal_plausibility_check_task(void *argument) {
         int16_t throttle = (int16_t)getThrottle();
         // Check to see if it is pressed, currently at 10%
         bool brake_engaged = data->brake_level > 100;
-        if (throttle > 250 && brake_engaged) {
+        if (throttle > 250 && brake_engaged && motorControl->opState == enabled) {
             motorControl->plaus_fault = true;
             motorControl->opState = plausibility_error;
         } else if (throttle < 50) {

@@ -7,7 +7,7 @@
 #define Forward  1
 #define Backward 0
 
-enum {
+typedef enum {
     STATE_DISABLE,
     STATE_ENABLE,
     STATE_WAIT,

@@ -5,8 +5,8 @@
 
 void motor_controller_task(void *argument) {
     volatile app_data *data = (app_data *)argument;
-    MotorControl_t *motorControl = &data->motorControl;
-    QueueHandle_t can_tx_queue = data->can_tx_queue;
+    volatile MotorControl_t *motorControl = &data->motorControl;
+    volatile can_tx_queue = data->can_tx_queue;
 
     TickType_t start = xTaskGetTickCount();
     state_t task_state = STATE_DISABLE;
@@ -17,18 +17,19 @@ void motor_controller_task(void *argument) {
     can_message_t clear_fault = create_motor_controller_rw_command(20, 1, 0);
 
     for (;;) {
+
         switch(task_state) {
             case STATE_ENABLE:
                 uint16_t throttle = (int16_t)getThrottle();  
                 //Checks for faults
-                else if (motorControl->opState == throttle_error || motorControl->opState == plausibility_error || is_fault(motorControl->fault)) {
+                if (motorControl->opState == throttle_error || motorControl->opState == plausibility_error || is_fault(motorControl->fault)) {
                         (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
                         motorControl->lastTorqueCommand = 0;
                         task_state = STATE_DISABLE;
+                        break;
                 }
                 // Normal operation
-                if (throttle > 1000 && throttle < 1300) throttle = 1000;
-                if (throttle < 20 || throttle > 1400) {
+                if (throttle < 20) {
                     (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
                     motorControl->lastTorqueCommand = 0;
                 } 
@@ -39,7 +40,6 @@ void motor_controller_task(void *argument) {
                             motorControl->lastTorqueCommand = torque_x10;
                         }
                     }
-                }
                 break;
 
             case STATE_DISABLE: 
@@ -72,7 +72,10 @@ void motor_controller_task(void *argument) {
                     task_state = STATE_DISABLE;
                 }
                 (void)xQueueSend(can_tx_queue, &free_roll, pdMS_TO_TICKS(5));
-        vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
+                break;
+                
+            vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
+        }
     }
 }
 

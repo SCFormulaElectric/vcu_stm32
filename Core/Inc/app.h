@@ -7,7 +7,7 @@
 #define CAN_receiver_task_PRIO 10
 #define Cooling_PRIO 10
 #define LC_PRIO 10
-#define CAN_transceiver_task_PRIO 10
+#define can_transmitter_task_PRIO 10
 #define telemetry_task_PRIO 6
 #define state_machine_PRIO 6
 #define dash_PRIO 6
@@ -34,7 +34,7 @@ typedef struct{
 	TaskHandle_t throttle_task_handle;
 	TaskHandle_t brake_pedal_plausibility_check_task_handle;
 	TaskHandle_t can_receiver_task_handle;
-	TaskHandle_t can_transceiver_task_handle;
+	TaskHandle_t can_transmitter_task_handle;
 	TaskHandle_t cli_input_task_handle;
 	TaskHandle_t cooling_task_handle;
 	TaskHandle_t dash_task_handle;

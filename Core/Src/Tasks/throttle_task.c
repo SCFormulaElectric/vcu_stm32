@@ -6,13 +6,35 @@
 void throttle_task(void *argument) {
     volatile app_data *data = (app_data *) argument;
     MotorControl_t *motorControl = &data->motorControl;
+    throttle_mutex = xSemaphoreCreateMutex();
+
+    volatile data_t throttle_levels = {0, 0};
+    SemaphoreHandle_t throttle_mutex;
+
     for (;;) {
-        // TODO: Implement Throttle Pedal Plausibility Check functionality
-        uint16_t throttle_level = data->throttle_level;
-        uint16_t brake_level = data->throttle_level;
+        // TODO: add the ADC reading for the throttle pins
+        uint16_t throttle_1 = map_to_percentage(input_1); 
+        uint16_t throttle_2 = map_to_percentage(input_2);
 
-        if (brake_level > )
+        //If are signals are valid
+        if (validate_signal(throttle_1, throttle_2)) {
+            if (motorControl->opState == throttle_error) {
+                motorControl->opState = enabled;
+            }
+            
+            // Todo: Maybe add a check to see if the prev readings were the same as the current reading so you don't need to take the mutex
+            xSemaphoreTake(throttle_mutex, portMAX_DELAY);
+            throttle_levels.throttle_1 = throttle_1;
+            throttle_levels.throttle_2 = throttle_2;
+            xSemaphoreGive(throttle_mutex);
 
+        }
+        else {
+            if (motorControl->opState == enabled) {
+                motorControl->opState = throttle_error;
+            }
+        }
+        
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
@@ -34,40 +56,46 @@ TaskHandle_t create_throttle_task(app_data *data) {
  * @param 
  *  input_1: raw ADC reading of sensor 1 from pedal
  *  input_2: raw ADC reading of sensor 2 from pedal
- *  disagree_tolerance: value for how much the two sensors can disagree, 10% based on 2024-2025 rules
- *  fault_tolerance: value for which a single sensor can go over or under the constraints
  */
-bool validate_signal(uint16_t input_1, uint16_t input_2, uint16_t disagree_tolerance, uint16_t fault_tolerance) {
+bool validate_signal(uint16_t input_1, uint16_t input_2) {
 
     // TODO: fill in the function parameters for the raw HAL input, min and max ADC reading of the throttle sensor
     // notes: old pedal sensor was 1 volt == 818 because of 12 bit ADC with range of 0 - 5 volts
-    uint16_t throttle_1 = map_to_percentage(); 
-    uint16_t throttle_2 = map_to_percentage();
-    bool within_bound = within_bounds(throttle_1, throttle_2, fault_tolerance);
-    bool apps_valid = apps_check()
 
+    
+    bool bound_valid = within_bounds(input_1, input_2);
+    //Failed to be within the min and max range of the pedal
+    if (!bound_valid) {
+        return false;
+    }
+    
+    //Failed to be within the allowed percentage of the two pedals
+    bool apps_valid = apps_check(input_1, input_2);
+    if (!apps_valid) {
+        return false;
+    }
+
+    return true;
 }
 
 // TODO: Add some sort of logging here to see what is actually throwing errors
-bool within_bounds(uint16_t& level1, uint16_t& level2, uint16_t fault_tolerance) {
-    // TODO: we will never have it below 0 because in the map to percentage, we return 0 if input < min_value.
-    // we have to because otherwise the mapped value will be < 0 and a uint can not store a negative number.
-    // level 1 to low
-    if (level1 < 0 - fault_tolerance) {
+bool within_bounds(uint16_t level1, uint16_t level2) {
+    if (level1 < 0 - THROTTLE_FAULT_TOLERANCE) {
+
         return false;
     }
     // level 1 to high 
-    if (level1 > 1000 + fault_tolerance) {
+    if (level1 > 1000 + THROTTLE_FAULT_TOLERANCE) {
         return false;
     }
 
     // level 2 to low
-    if (level2 < 0 - fault_tolerance) {
+    if (level2 < 0 - THROTTLE_FAULT_TOLERANCE) {
         return false;
     }
 
     // level 2 to high 
-    if (level2 > 1000 + fault_tolerance) {
+    if (level2 > 1000 + THROTTLE_FAULT_TOLERANCE) {
         return false;
     }
     
@@ -82,8 +110,18 @@ bool within_bounds(uint16_t& level1, uint16_t& level2, uint16_t fault_tolerance)
     return true;
 }
 
-bool apps_check() {
+
+// TODO: Add some sort of logging here to see what is actually throwing errors
+bool apps_check(uint16_t level1, uint16_t level2) {
+    // level1 is > MAX_ERROR% more than level2
+    if (level1 > level2 + MAX_PEDAL_DIFFERENCE) {
+        return false;
+    }
     
+    // level2 is > MAX_ERROR% more than level1
+    if (level2 > level1 + MAX_PEDAL_DIFFERENCE) {
+        return false;
+    }
 }
 
 uint16_t map_to_percentage(uint16_t input, uint16_t min_val, uint16_t max_val) {
@@ -91,6 +129,8 @@ uint16_t map_to_percentage(uint16_t input, uint16_t min_val, uint16_t max_val) {
     if (min_val >= max_val) {
         return 0;
     }
-    // mapped value from 0 - 1000
+    if (input < min_val) {
+        return 0;
+    }
     return (uint16_t)(((uint32_t)(input - min_val) * 1000) / (max_val - min_val));
 }
