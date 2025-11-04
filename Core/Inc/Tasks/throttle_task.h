@@ -5,11 +5,11 @@
 #include "task.h"
 #include "app.h"
 #include <stdint.h>
+#include "semphr.h"
 #define MAX_PEDAL_DIFFERENCE 100
 #define THROTTLE_FAULT_TOLERANCE 150
 
-
-// Allow other tasks to read throtle levels
+// Global variable for other tasks to read
 extern volatile uint16_t throttle_level; 
 
 // Task function
