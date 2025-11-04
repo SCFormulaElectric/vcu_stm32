@@ -4,7 +4,7 @@
 #include "Tasks/throttle_task.h"
 #include "Tasks/brake_pedal_plausibility_check_task.h"
 #include "Tasks/can_receiver_task.h"
-#include "Tasks/can_transceiver_task.h"
+#include "Tasks/can_transmitter_task.h"
 #include "Tasks/cli_input_task.h"
 #include "Tasks/cooling_task.h"
 #include "Tasks/dash_task.h"
@@ -25,7 +25,7 @@ void create_app(){
         assert((app.throttle_task_handle = create_throttle_task()) != NULL);
         assert((app.brake_pedal_plausibility_check_task_handle = create_brake_pedal_plausibility_check_task()) != NULL);
         assert((app.can_receiver_task_handle = create_can_receiver_task()) != NULL);
-        assert((app.can_transceiver_task_handle = create_can_transceiver_task()) != NULL);
+        assert((app.can_transmitter_task_handle = create_can_transmitter_task()) != NULL);
         assert((app.cli_input_task_handle = create_cli_input_task()) != NULL);
         assert((app.cooling_task_handle = create_cooling_task()) != NULL);
         assert((app.dash_task_handle = create_dash_task()) != NULL);

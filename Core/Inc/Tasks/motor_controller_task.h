@@ -3,11 +3,12 @@
 #include "../../Inc/app.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "throttle_task.h"
 
 #define Forward  1
 #define Backward 0
 
-enum {
+typedef enum {
     STATE_DISABLE,
     STATE_ENABLE,
     STATE_WAIT,

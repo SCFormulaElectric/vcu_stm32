@@ -1,12 +1,12 @@
 #include "FreeRTOS.h"
 #include "task.h"
-#include "Tasks/can_transceiver_task.h"
+#include "Tasks/can_transmitter_task.h"
 #include "canbus.h"
 
 // Task: CAN Transceiver
 #define DATA_LENGTH = 8;
 
-void can_transceiver_task(void *argument) {
+void can_transmitter_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
     canbus_t *canbus = &data->canbus;
     QueueHandle_t queue = data->can_tx_queue;
@@ -32,10 +32,10 @@ void can_transceiver_task(void *argument) {
 }
 
 
-TaskHandle_t create_can_transceiver_task(app_data *data) {
+TaskHandle_t create_can_transmitter_task(app_data *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        can_transceiver_task,            // Task function
+        can_transmitter_task,            // Task function
         "CAN Transceiver",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
