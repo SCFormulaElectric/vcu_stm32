@@ -1,19 +1,33 @@
 #include "motor_control.h"
-#include "canbus.h"
+#include "can_bus.h"
+#include "Tasks/Critical/throttle_task.h"
+#include "Tasks/Critical/brake_pedal_plausibility_check_task.h"
+#include "Tasks/CAN/can_receiver_task.h"
+#include "Tasks/CAN/can_transmitter_task.h"
+#include "Tasks/DAQ/CLI/cli_input_task.h"
+#include "Tasks/Misc/cooling_task.h"
+#include "Tasks/Misc/dash_task.h"
+#include "Tasks/Misc/default_task_task.h"
+#include "Tasks/Critical/independent_watchdog_task.h"
+#include "Tasks/Misc/light_controller_task.h"
+#include "Tasks/Critical/motor_controller_task.h"
+#include "Tasks/DAQ/CLI/sd_card_task.h"
+#include "Tasks/Critical/state_machine_task.h"
+#include "Tasks/DAQ/telemetry_task.h"
+
 #define BPPS_PRIO 13
 #define APPS_PRIO 13
 #define IWT_PRIO  13
 #define MCT_PRIO  10
-#define CAN_receiver_task_PRIO 10
+#define CAN_PRIO 10
 #define Cooling_PRIO 10
 #define LC_PRIO 10
-#define can_transmitter_task_PRIO 10
 #define telemetry_task_PRIO 6
 #define state_machine_PRIO 6
 #define dash_PRIO 6
 #define sd_card_PRIO 6
 #define cli_input_PRIO 6
-#define motor_control_interval 25 //10-50 milisecond is required.
+#define motor_control_interval 25
 #define MAX_TORQUE 300 
 
 enum StartUpMode {
@@ -47,22 +61,15 @@ typedef struct{
 	TaskHandle_t telemetry_task_handle;
     StartUpMode  startup_mode;
 
-	car_data_t car_data;
-	canbus_t     canbus;
-	QueueHandle_t can_tx_queue;
-	QueueHandle_t can_rx_queue;
+	can_bus_t     can_bus;
 
 	MotorControl_t motorControl;
 
 	uint16_t throttle_level;
 	uint16_t brake_level;
 
-} app_data;
+} app_data_t;
 
-typedef struct {
-	canbus_t canbus;
-	MotorControl_t motor_control;
-} car_data_t
 
 void create_app();
 uint16_t getThrottle();

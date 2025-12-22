@@ -118,7 +118,7 @@ int main(void)
   /* creation of defaultTask */
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  create_app();
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
