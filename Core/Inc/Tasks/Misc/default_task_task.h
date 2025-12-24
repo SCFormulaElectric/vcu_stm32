@@ -7,7 +7,7 @@
 void default_task_task(void *argument);
 
 
-TaskHandle_t create_default_task_task(void);
+task_entry_t create_default_task_task(void);
 
 #endif /* DEFAULT_TASK_TASK_H */
 

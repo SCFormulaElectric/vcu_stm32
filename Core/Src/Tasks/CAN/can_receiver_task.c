@@ -39,7 +39,7 @@ void process_MC_msg(app_data_t *data, can_message_t message) {
     }
 }
 
-TaskHandle_t create_can_receiver_task(app_data_t *data) {
+task_entry_t create_can_receiver_task(app_data_t *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         can_receiver_task,            
@@ -49,5 +49,8 @@ TaskHandle_t create_can_receiver_task(app_data_t *data) {
         CAN_PRIO,    // Priority (adjust as needed)
         &handle                  // Task handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "can_recv"
+    return entry;
 }

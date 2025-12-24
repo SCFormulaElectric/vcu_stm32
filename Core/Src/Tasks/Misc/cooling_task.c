@@ -9,7 +9,7 @@ void cooling_task(void *argument) {
     }
 }
 
-TaskHandle_t create_cooling_task(void) {
+task_entry_t create_cooling_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         cooling_task,            

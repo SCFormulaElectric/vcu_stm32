@@ -33,7 +33,7 @@ void can_receiver_task(void *argument);
 void process_MC_msg(app_data_t *data, can_message_t message);
 
 
-TaskHandle_t create_can_receiver_task(void);
+task_entry_t create_can_receiver_task(void);
 
 #endif /* CAN_RECEIVER_TASK_H */
 

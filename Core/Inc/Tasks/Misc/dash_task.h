@@ -7,7 +7,7 @@
 void dash_task(void *argument);
 
 
-TaskHandle_t create_dash_task(void);
+task_entry_t create_dash_task(void);
 
 #endif /* DASH_TASK_H */
 

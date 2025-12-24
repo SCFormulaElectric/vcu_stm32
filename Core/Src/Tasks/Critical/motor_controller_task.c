@@ -79,7 +79,7 @@ void motor_controller_task(void *argument) {
     }
 }
 
-TaskHandle_t create_motor_controller_task(app_data_t *data) {
+task_entry_t create_motor_controller_task(app_data_t *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         motor_controller_task,   
@@ -89,7 +89,10 @@ TaskHandle_t create_motor_controller_task(app_data_t *data) {
         MCT_PRIO + 1,            // Priority (adjust as needed)
         &handle                  // Task handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "motor_controller"
+    return entry;
 }
 
 can_message_t create_motor_controller_command(

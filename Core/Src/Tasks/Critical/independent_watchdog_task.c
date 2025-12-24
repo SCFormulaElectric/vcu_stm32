@@ -9,7 +9,7 @@ void independent_watchdog_task(void *argument) {
     }
 }
 
-TaskHandle_t create_independent_watchdog_task(void) {
+task_entry_t create_independent_watchdog_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         independent_watchdog_task,            
@@ -19,5 +19,8 @@ TaskHandle_t create_independent_watchdog_task(void) {
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
         &handle                  // Task handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "idwg"
+    return entry;
 }

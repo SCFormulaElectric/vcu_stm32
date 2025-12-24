@@ -4,7 +4,7 @@
 void light_controller_task(void *argument);
 
 
-TaskHandle_t create_light_controller_task(void);
+task_entry_t create_light_controller_task(void);
 
 #endif /* LIGHT_CONTROLLER_TASK_H */
 

@@ -8,7 +8,7 @@
 void independent_watchdog_task(void *argument);
 
 
-TaskHandle_t create_independent_watchdog_task(void);
+task_entry_t create_independent_watchdog_task(void);
 
 #endif /* INDEPENDENT_WATCHDOG_TASK_H */
 

@@ -8,7 +8,7 @@
 void telemetry_task(void *argument);
 
 
-TaskHandle_t create_telemetry_task(void);
+task_entry_t create_telemetry_task(void);
 
 #endif /* TELEMETRY_TASK_H */
 

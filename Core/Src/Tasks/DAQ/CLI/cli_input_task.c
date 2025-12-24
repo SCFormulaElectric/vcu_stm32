@@ -56,7 +56,7 @@ void process_cmd(app_data_t *app, const char *cmd) {
     }
     // printf("Unknown task: %s\n", task_name);
 }
-TaskHandle_t create_cli_input_task(void) {
+task_entry_t create_cli_input_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         cli_input_task,            
@@ -66,5 +66,8 @@ TaskHandle_t create_cli_input_task(void) {
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
         &handle                  // Task handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "cli"
+    return entry;
 }

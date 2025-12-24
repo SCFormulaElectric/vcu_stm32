@@ -7,7 +7,7 @@
 void cooling_task(void *argument);
 
 
-TaskHandle_t create_cooling_task(void);
+task_entry_t create_cooling_task(void);
 
 #endif /* COOLING_TASK_H */
 

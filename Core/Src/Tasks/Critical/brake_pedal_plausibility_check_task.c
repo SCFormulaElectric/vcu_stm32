@@ -14,7 +14,7 @@ void brake_pedal_plausibility_check_task(void *argument) {
     }
 }
 
-TaskHandle_t create_brake_pedal_plausibility_check_task(void) {
+task_entry_t create_brake_pedal_plausibility_check_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         brake_pedal_plausibility_check_task,            
@@ -24,5 +24,8 @@ TaskHandle_t create_brake_pedal_plausibility_check_task(void) {
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
         &handle                  // Task handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "bpps"
+    return entry;
 }

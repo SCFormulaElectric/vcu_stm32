@@ -8,7 +8,7 @@
 void sd_card_task(void *argument);
 
 
-TaskHandle_t create_sd_card_task(void);
+task_entry_t create_sd_card_task(void);
 
 #endif /* SD_CARD_TASK_H */
 

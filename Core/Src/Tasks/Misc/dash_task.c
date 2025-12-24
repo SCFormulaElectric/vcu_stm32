@@ -9,7 +9,7 @@ void dash_task(void *argument) {
     }
 }
 
-TaskHandle_t create_dash_task(void) {
+task_entry_t create_dash_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         dash_task,            

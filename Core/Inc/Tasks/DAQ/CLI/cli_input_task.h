@@ -13,7 +13,7 @@
 void cli_input_task(void *argument);
 void process_cmd(app_data_t *app, const char *cmd);
 
-TaskHandle_t create_cli_input_task(void);
+task_entry_t create_cli_input_task(void);
 
 #endif /* CLI_INPUT_TASK_H */
 

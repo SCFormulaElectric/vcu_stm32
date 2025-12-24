@@ -17,7 +17,7 @@
 #define THROTTLE_PIN2_MAX 1892
 
 void throttle_task(void *argument);
-TaskHandle_t create_throttle_task(void);
+task_entry_t create_throttle_task(void);
 uint_8 apps_faulted(uint16_t level1, uint16_t level2);
 uint_8 invalid_signal_check(uint16_t input_1, uint16_t input_2);
 uint_8 out_of_bounds(uint16_t level1, uint16_t level2);

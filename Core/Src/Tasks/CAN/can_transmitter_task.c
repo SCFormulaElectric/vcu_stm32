@@ -36,7 +36,7 @@ void can_transmitter_task(void *argument)
 
 
 
-TaskHandle_t create_can_transmitter_task(app_data_t *data) {
+task_entry_t create_can_transmitter_task(app_data_t *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         can_transmitter_task,
@@ -46,5 +46,8 @@ TaskHandle_t create_can_transmitter_task(app_data_t *data) {
         CAN_PRIO,
         &handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "can_transmitter"
+    return entry;
 }

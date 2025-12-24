@@ -9,7 +9,7 @@ void light_controller_task(void *argument) {
     }
 }
 
-TaskHandle_t create_light_controller_task(void) {
+task_entry_t create_light_controller_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         light_controller_task,            

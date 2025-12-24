@@ -9,7 +9,7 @@ void telemetry_task(void *argument) {
     }
 }
 
-TaskHandle_t create_telemetry_task(void) {
+task_entry_t create_telemetry_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
         telemetry_task,            
@@ -19,5 +19,8 @@ TaskHandle_t create_telemetry_task(void) {
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
         &handle                  // Task handle
     );
-    return handle;
+    task_entry_t entry;
+    entry.handle = handle;
+    entry.name = "telemetry"
+    return entry;
 }

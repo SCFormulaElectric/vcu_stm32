@@ -8,7 +8,7 @@
 void state_machine_task(void *argument);
 
 
-TaskHandle_t create_state_machine_task(void);
+task_entry_t create_state_machine_task(void);
 
 #endif /* STATE_MACHINE_TASK_H */
 
