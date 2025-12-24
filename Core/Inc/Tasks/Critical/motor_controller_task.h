@@ -7,6 +7,7 @@
 
 #define Forward  1
 #define Backward 0
+#define MC_QUEUE_WAIT_MS 5
 
 typedef enum {
     STATE_DISABLE,
