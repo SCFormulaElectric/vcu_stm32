@@ -24,6 +24,7 @@
 #define motor_control_interval 25
 #define MAX_TORQUE 300 
 
+#define NUM_TASKS 14
 
 #define CLI_QUEUE_LENGTH    10
 #define CLI_ITEM_SIZE       sizeof(char)
@@ -45,27 +46,14 @@ typedef enum {
 typedef struct {
     const char *name;
     TaskHandle_t *handle;
-} cli_task_entry_t;
+} task_entry_t;
 
 extern volatile system_state_t extern_curr_state;
 
 typedef struct app_data_s {
 	// Task handles
-	TaskHandle_t throttle_task_handle;
-	TaskHandle_t brake_pedal_plausibility_check_task_handle;
-	TaskHandle_t can_receiver_task_handle;
-	TaskHandle_t can_transmitter_task_handle;
-	TaskHandle_t cli_input_task_handle;
-	TaskHandle_t cooling_task_handle;
-	TaskHandle_t dash_task_handle;
-	TaskHandle_t default_task_task_handle;
-	TaskHandle_t independent_watchdog_task_handle;
-	TaskHandle_t light_controller_task_handle;
-	TaskHandle_t motor_controller_task_handle;
-	TaskHandle_t sd_card_task_handle;
-	TaskHandle_t state_machine_task_handle;
-	TaskHandle_t telemetry_task_handle;
-	
+	task_entry_t task_entires[NUM_TASKS];
+
     StartUpMode  startup_mode;
 
 	can_bus_t      can_bus;

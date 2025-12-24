@@ -1,5 +1,4 @@
 #include "Tasks/DAQ/CLI/cli_input_task.h"
-#include "handles.h"
 
 // Task: CLI Input
 
@@ -7,7 +6,7 @@ void cli_input_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
     char cli_buffer[CLI_BUFFER_SIZE];
     uint8_t index = 0;
-    memset(cli_buffer, 0, sizeof(cli_buffer));
+    memset(&cli_buffer, 0, sizeof(cli_buffer));
     for (;;) {
         uint8_t ch;
         if (xQueueReceive(data->cli_queue, &ch, CLI_TICKS_TO_WAIT))
@@ -40,9 +39,9 @@ void process_cmd(app_data_t *app, const char *cmd) {
     }
 
     // Look up task by name
-    for (size_t i = 0; i < CLI_TASK_COUNT; i++) {
-        if (strcmp(task_name, cli_tasks[i].name) == 0) {
-            TaskHandle_t handle = *(cli_tasks[i].handle);
+    for (size_t i = 0; i < NUM_TASKS; i++) {
+        if (strcmp(task_name, app->task_entires[i].name) == 0) {
+            TaskHandle_t handle = *(app->task_entires[i].handle);
             if (value == 0) {
                 vTaskSuspend(handle);
                 // printf("%s suspended\n", task_name);
