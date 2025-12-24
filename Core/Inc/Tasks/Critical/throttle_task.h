@@ -11,6 +11,11 @@
 #define THROTTLE_PIN1 1
 #define THROTTLE_PIN2 2
 
+#define THROTTLE_PIN1_MIN 600
+#define THROTTLE_PIN1_MAX 3719 
+#define THROTTLE_PIN2_MIN 330
+#define THROTTLE_PIN2_MAX 1892
+
 void throttle_task(void *argument);
 TaskHandle_t create_throttle_task(void);
 uint_8 apps_faulted(uint16_t level1, uint16_t level2);

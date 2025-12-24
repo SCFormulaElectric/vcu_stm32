@@ -4,11 +4,10 @@ void throttle_task(void *argument) {
     volatile app_data_t *data = (app_data_t *) argument;
 
     for (;;) {
-        // TODO: add the ADC reading for the throttle pins
         uint16_t input_1 = adc_buffer[THROTTLE_PIN1];
         uint16_t input_2 = adc_buffer[THROTTLE_PIN2];
-        uint16_t throttle_1 = map_to_percentage(input_1); 
-        uint16_t throttle_2 = map_to_percentage(input_2);
+        uint16_t throttle_1 = map_to_percentage(input_1, THROTTLE_PIN1_MIN, THROTTLE_PIN1_MAX); 
+        uint16_t throttle_2 = map_to_percentage(input_2, THROTTLE_PIN2_MIN, THROTTLE_PIN2_MAX);
 
         //If are signals are valid
         if (0 == invalid_signal_check(throttle_1, throttle_2)) {
@@ -17,6 +16,7 @@ void throttle_task(void *argument) {
         }
         else {
             data->motorControl.input_faults.apps_fault = 1;
+            data->throttle_level = 0;
         }
         
         vTaskDelay(pdMS_TO_TICKS(THROTTLE_TASK_DELAY_MS));
@@ -42,13 +42,9 @@ TaskHandle_t create_throttle_task(app_data_t *data) {
  *  input_2: raw ADC reading of sensor 2 from pedal
  */
 uint_8 invalid_signal_check(uint16_t input_1, uint16_t input_2) {
-
-    // TODO: fill in the function parameters for the raw HAL input, min and max ADC reading of the throttle sensor
-    // notes: old pedal sensor was 1 volt == 818 because of 12 bit ADC with range of 0 - 5 volts
-
     
-    uint_8 bound_invalid = out_of_bounds(input_1, input_2);
     //Failed to be within the min and max range of the pedal
+    uint_8 bound_invalid = out_of_bounds(input_1, input_2);
     if (1 == bound_invalid) {
         return 1;
     }
