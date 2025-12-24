@@ -1,7 +1,7 @@
 #include "Tasks/Critical/brake_pedal_plausibility_check_task.h"
 
 void brake_pedal_plausibility_check_task(void *argument) {
-    volatile app_data_t *data = (app_data_t *) argument;
+    app_data_t *data = (app_data_t *) argument;
     TickType_t start = xTaskGetTickCount();
 
     for (;;) {

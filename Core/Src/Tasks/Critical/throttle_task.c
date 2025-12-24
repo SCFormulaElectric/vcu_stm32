@@ -1,7 +1,7 @@
 #include "Tasks/Critical/throttle_task.h"
 
 void throttle_task(void *argument) {
-    volatile app_data_t *data = (app_data_t *) argument;
+    app_data_t *data = (app_data_t *) argument;
 
     for (;;) {
         uint16_t input_1 = adc_buffer[THROTTLE_PIN1];

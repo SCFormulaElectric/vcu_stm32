@@ -8,13 +8,13 @@ typedef struct {
 } external_motor_fault_t;
 
 typedef struct {
-    uint16_t torqueCommand;
-    uint16_t lastTorqueCommand;
-    uint16_t voltage;
-    uint16_t motor_speed;
-    uint16_t actual_torque;
-    uint16_t inverter_state;
-	external_motor_fault_t input_faults;
+    volatile uint16_t torqueCommand;
+    volatile uint16_t lastTorqueCommand;
+    volatile uint16_t voltage;
+    volatile uint16_t motor_speed;
+    volatile uint16_t actual_torque;
+    volatile uint16_t inverter_state;
+	volatile external_motor_fault_t input_faults;
 
 	//Motor Control CAN Broadcast Messages
 	MC_temp_t temp;

@@ -3,7 +3,7 @@
 // Task: Motor Controller
 
 void motor_controller_task(void *argument) {
-    volatile app_data_t *data = (app_data_t *)argument;
+    app_data_t *data = (app_data_t *)argument;
     volatile MotorControl_t *motorControl = &data->motorControl;
 
     TickType_t start = xTaskGetTickCount();

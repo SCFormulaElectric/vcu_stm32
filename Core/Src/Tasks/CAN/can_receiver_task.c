@@ -1,7 +1,7 @@
 #include "Tasks/CAN/can_receiver_task.h"
 
 void can_receiver_task(void *argument) {
-    volatile app_data_t *data = (app_data_t *) argument;
+    app_data_t *data = (app_data_t *) argument;
     QueueHandle_t queue = data->can_rx_queue;
     can_message_t msg;
     for (;;) {
