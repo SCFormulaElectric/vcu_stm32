@@ -1,10 +1,9 @@
 #ifndef CAN_RECEIVER_TASK_H
 #define CAN_RECEIVER_TASK_H
 
-#include "FreeRTOS.h"
-#include "task.h"
 #include "app.h"
 #include "canbus.h"
+#include "can_bus.h"
 
 // Motor Controller IDs
 #define MOTOR_CONTROLLER_ID_MIN 0x0A0
@@ -29,11 +28,11 @@ Information 0x2000
 0x0AE Slow/10 Hz Firmware Information 0x4000
 0x0AF 100 Hz (fixed) Diagnostic Data */
 
-// Task function
+
 void can_receiver_task(void *argument);
 void process_MC_msg(app_data_t *data, can_message_t message);
 
-// Function to create the task and return its handle
+
 TaskHandle_t create_can_receiver_task(void);
 
 #endif /* CAN_RECEIVER_TASK_H */

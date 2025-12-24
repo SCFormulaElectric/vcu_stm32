@@ -1,6 +1,4 @@
 #include "Tasks/Critical/motor_controller_task.h"
-#include "app.h"
-
 
 // Task: Motor Controller
 
@@ -82,7 +80,7 @@ void motor_controller_task(void *argument) {
 TaskHandle_t create_motor_controller_task(app_data_t *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        motor_controller_task,   // Task function
+        motor_controller_task,   
         "Motor Controller",      // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters

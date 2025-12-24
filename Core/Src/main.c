@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "adc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,6 +45,7 @@ ADC_HandleTypeDef hadc1;
 
 /* USER CODE BEGIN PV */
 
+uint16_t adc_buffer[ADC_CHANNEL_COUNT];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,7 +93,9 @@ int main(void)
   MX_GPIO_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_ADC_Start_DMA(&hadc1,
+                        (uint32_t*)adc_buffer,
+                        ADC_CHANNEL_COUNT);
   /* USER CODE END 2 */
 
   /* Init scheduler */

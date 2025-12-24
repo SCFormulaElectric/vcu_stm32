@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/Critical/state_machine_task.h"
 
 // Task: State Machine
@@ -14,7 +12,7 @@ void state_machine_task(void *argument) {
 TaskHandle_t create_state_machine_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        state_machine_task,            // Task function
+        state_machine_task,            
         "State Machine",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

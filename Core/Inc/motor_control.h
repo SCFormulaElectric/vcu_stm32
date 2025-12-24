@@ -2,22 +2,19 @@
 
 #define CAN_Command_Message_Lost_Fault 0x00000800;
 
-typedef	enum {
-	enabled,
-	throttle_error,
-	plausibility_error
-} mc_error_t;
+typedef struct {
+    uint8_t apps_fault;
+    uint8_t bpps_fault;
+} external_motor_fault_t;
 
 typedef struct {
-	bool enabled;
-    bool fault;
-	mc_error_t  opState;
     uint16_t torqueCommand;
     uint16_t lastTorqueCommand;
     uint16_t voltage;
     uint16_t motor_speed;
     uint16_t actual_torque;
     uint16_t inverter_state;
+	external_motor_fault_t input_faults;
 
 	//Motor Control CAN Broadcast Messages
 	MC_temp_t temp;
@@ -73,14 +70,14 @@ typedef struct {
 
 //0x0A4
 typedef struct {
-	bool INV_Digital_Input_1; // Status of Digital Input #1, Forward switch
-	bool INV_Digital_Input_2; // Status of Digital Input #2, Reverse switch
-	bool INV_Digital_Input_3; // Status of Digital Input #3, Brake switch
-	bool INV_Digital_Input_4; // Status of Digital Input #4, Regen Disable switch
-	bool INV_Digital_Input_5; // Status of Digital Input #5, Ignition switch
-	bool INV_Digital_Input_6; // Status of Digital Input #6, Start switch
-	bool INV_Digital_Input_7; // Status of Digital Input #7, Valet Mode
-	bool INV_Digital_Input_8; // Status of Digital Input #8
+	uint_8 INV_Digital_Input_1; // Status of Digital Input #1, Forward switch
+	uint_8 INV_Digital_Input_2; // Status of Digital Input #2, Reverse switch
+	uint_8 INV_Digital_Input_3; // Status of Digital Input #3, Brake switch
+	uint_8 INV_Digital_Input_4; // Status of Digital Input #4, Regen Disable switch
+	uint_8 INV_Digital_Input_5; // Status of Digital Input #5, Ignition switch
+	uint_8 INV_Digital_Input_6; // Status of Digital Input #6, Start switch
+	uint_8 INV_Digital_Input_7; // Status of Digital Input #7, Valet Mode
+	uint_8 INV_Digital_Input_8; // Status of Digital Input #8
 } digital_input_status_t;
 
 //0x0A5
@@ -157,8 +154,8 @@ typedef struct {
 	//Bit 4: Relay 5 Status
 	//Bit 5: Relay 6 Status
 
-	bool INV_Inverter_Run_Mode; //Byte 4 bit 0, 0 = Torque Mode 1 = Speed Mode
-	bool INV_Self_Sensing_Assist_Enable; //Byte 4 bit 1, 0 = Disabled, 1 = Enabled
+	uint_8 INV_Inverter_Run_Mode; //Byte 4 bit 0, 0 = Torque Mode 1 = Speed Mode
+	uint_8 INV_Self_Sensing_Assist_Enable; //Byte 4 bit 1, 0 = Disabled, 1 = Enabled
 	uint8_t INV_ASC_State; //Byte 4 bit 2-4, Current Active Short Circuit State:
 	//0: ASC_Disabled
 	//1: ASC_Enabled
@@ -176,26 +173,26 @@ typedef struct {
 	//3: Active
 	//4: Completed
 
-	bool INV_Inverter_Command_Mode; // Byte 5 bit 0, 0 = CAN Mode, 1 = VSM Mode
+	uint_8 INV_Inverter_Command_Mode; // Byte 5 bit 0, 0 = CAN Mode, 1 = VSM Mode
 	uint8_t INV_Rolling_Counter;    // Byte 5 bits 4-7, The value of the currently expected Rolling Counter value.
 	
 	//Byte 6
-	bool INV_Inverter_Enable_State; // 0 = disabled, 1 = enabled
-	bool INV_Burst_Model_Mode;      // 0 = Stall, 1 = High Speed
-	bool INV_BMS_Limiting_Regen_Torque; // 0 = Not Limited, 1 = Limited
-	bool INV_Limit_Motor_Temp_Derate;   // 0 = Not Limited, 1 = Limited
-	bool INV_Limit_Hot_Spot_Motor;      // 0 = Not Limited, 1 = Limited
-	bool INV_Key_Switch_Start_Status;   // 0 = Not Active, 1 = Active
-	bool INV_Inverter_Enable_Lockout //0 = Inverter can be enabled, 1 = Inverter cannot be enabled
+	uint_8 INV_Inverter_Enable_State; // 0 = disabled, 1 = enabled
+	uint_8 INV_Burst_Model_Mode;      // 0 = Stall, 1 = High Speed
+	uint_8 INV_BMS_Limiting_Regen_Torque; // 0 = Not Limited, 1 = Limited
+	uint_8 INV_Limit_Motor_Temp_Derate;   // 0 = Not Limited, 1 = Limited
+	uint_8 INV_Limit_Hot_Spot_Motor;      // 0 = Not Limited, 1 = Limited
+	uint_8 INV_Key_Switch_Start_Status;   // 0 = Not Active, 1 = Active
+	uint_8 INV_Inverter_Enable_Lockout //0 = Inverter can be enabled, 1 = Inverter cannot be enabled
 
 	// Byte 7
-	bool INV_BMS_Active;                  // 7-Bit 1: 0 = BMS Message is not being received, 1 = BMS Message is being received
-	bool INV_BMS_Limiting_Motor_Torque;   // 7-Bit 2: Indicates if motoring torque is being limited
-	bool INV_Limit_Max_Speed;             // 7-Bit 3: Indicates if torque is being limited due to the motor speed exceeding the maximum
-	bool INV_Limit_Hot_Spot_Inverter;     // 7-Bit 4: Indicates if the current is limited due to the inverter hot spot temperature regulator
-	bool INV_Low_Speed_Limiting;          // 7-Bit 5: Indicates if the current is limited due to low speed current limiting
-	bool INV_Limit_Coolant_Derating;      // 7-Bit 6: Indicates if the current is limited due to excessive coolant temperature
-	bool INV_Limit_Stall_Burst_Model;     // 7-Bit 7: Indicates if the current is being limited due to the stall burst model
+	uint_8 INV_BMS_Active;                  // 7-Bit 1: 0 = BMS Message is not being received, 1 = BMS Message is being received
+	uint_8 INV_BMS_Limiting_Motor_Torque;   // 7-Bit 2: Indicates if motoring torque is being limited
+	uint_8 INV_Limit_Max_Speed;             // 7-Bit 3: Indicates if torque is being limited due to the motor speed exceeding the maximum
+	uint_8 INV_Limit_Hot_Spot_Inverter;     // 7-Bit 4: Indicates if the current is limited due to the inverter hot spot temperature regulator
+	uint_8 INV_Low_Speed_Limiting;          // 7-Bit 5: Indicates if the current is limited due to low speed current limiting
+	uint_8 INV_Limit_Coolant_Derating;      // 7-Bit 6: Indicates if the current is limited due to excessive coolant temperature
+	uint_8 INV_Limit_Stall_Burst_Model;     // 7-Bit 7: Indicates if the current is being limited due to the stall burst model
 } internal_states_t;
 
 // 0x0AB: Fault Codes
@@ -253,8 +250,8 @@ typedef struct {
 //0x0C2
 typedef struct {
 	uint16_t Parameter_Address;
-	bool Write_Success;
+	uint8_t Write_Success;
 	uint16_t Data;
-} parameter_response_t
+} parameter_response_t;
 
-bool is_fault(const fault_codes_t *faults);
+uint8_t is_fault(const fault_codes_t *faults);

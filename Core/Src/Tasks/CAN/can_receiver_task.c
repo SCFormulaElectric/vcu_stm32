@@ -42,7 +42,7 @@ void process_MC_msg(app_data_t *data, can_message_t message) {
 TaskHandle_t create_can_receiver_task(app_data_t *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        can_receiver_task,            // Task function
+        can_receiver_task,            
         "CAN Receiver",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters

@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/DAQ/CLI/sd_card_task.h"
 
 // Task: SD Card
@@ -14,7 +12,7 @@ void sd_card_task(void *argument) {
 TaskHandle_t create_sd_card_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        sd_card_task,            // Task function
+        sd_card_task,            
         "SD Card",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

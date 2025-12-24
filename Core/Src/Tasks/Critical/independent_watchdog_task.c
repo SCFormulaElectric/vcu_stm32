@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/Critical/independent_watchdog_task.h"
 
 // Task: Independent Watchdog
@@ -14,7 +12,7 @@ void independent_watchdog_task(void *argument) {
 TaskHandle_t create_independent_watchdog_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        independent_watchdog_task,            // Task function
+        independent_watchdog_task,            
         "Independent Watchdog",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

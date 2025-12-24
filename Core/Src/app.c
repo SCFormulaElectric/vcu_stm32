@@ -1,4 +1,5 @@
 #include "app.h"
+#include "tasks.h"
 
 static volatile app_data_t app;
 static volatile MotorControl_t motor;

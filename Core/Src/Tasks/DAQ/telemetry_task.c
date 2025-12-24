@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/DAQ/telemetry_task.h"
 
 // Task: Telemetry
@@ -14,7 +12,7 @@ void telemetry_task(void *argument) {
 TaskHandle_t create_telemetry_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        telemetry_task,            // Task function
+        telemetry_task,            
         "Telemetry",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

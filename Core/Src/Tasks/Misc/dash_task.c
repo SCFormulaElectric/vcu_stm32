@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/Misc/dash_task.h"
 
 // Task: Dash
@@ -14,7 +12,7 @@ void dash_task(void *argument) {
 TaskHandle_t create_dash_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        dash_task,            // Task function
+        dash_task,            
         "Dash",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

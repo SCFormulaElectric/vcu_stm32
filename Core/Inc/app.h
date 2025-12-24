@@ -1,19 +1,11 @@
+#ifndef APP_H
+#define APP_H
+
 #include "motor_control.h"
 #include "can_bus.h"
-#include "Tasks/Critical/throttle_task.h"
-#include "Tasks/Critical/brake_pedal_plausibility_check_task.h"
-#include "Tasks/CAN/can_receiver_task.h"
-#include "Tasks/CAN/can_transmitter_task.h"
-#include "Tasks/DAQ/CLI/cli_input_task.h"
-#include "Tasks/Misc/cooling_task.h"
-#include "Tasks/Misc/dash_task.h"
-#include "Tasks/Misc/default_task_task.h"
-#include "Tasks/Critical/independent_watchdog_task.h"
-#include "Tasks/Misc/light_controller_task.h"
-#include "Tasks/Critical/motor_controller_task.h"
-#include "Tasks/DAQ/CLI/sd_card_task.h"
-#include "Tasks/Critical/state_machine_task.h"
-#include "Tasks/DAQ/telemetry_task.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "adc.h"
 
 #define BPPS_PRIO 13
 #define APPS_PRIO 13
@@ -30,10 +22,10 @@
 #define motor_control_interval 25
 #define MAX_TORQUE 300 
 
-enum StartUpMode {
+typedef enum {
     ALL,
     CLI_ONLY
-};
+} StartUpMode;
 
 typedef enum {
     S0,
@@ -43,7 +35,7 @@ typedef enum {
 
 extern volatile system_state_t extern_curr_state;
 
-typedef struct{
+typedef struct app_data_s {
 	// Task handles
 	TaskHandle_t throttle_task_handle;
 	TaskHandle_t brake_pedal_plausibility_check_task_handle;
@@ -62,7 +54,6 @@ typedef struct{
     StartUpMode  startup_mode;
 
 	can_bus_t     can_bus;
-
 	MotorControl_t motorControl;
 
 	uint16_t throttle_level;
@@ -73,3 +64,5 @@ typedef struct{
 
 void create_app();
 uint16_t getThrottle();
+
+#endif /* APP_H */

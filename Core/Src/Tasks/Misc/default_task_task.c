@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/Misc/default_task_task.h"
 
 // Task: Default Task
@@ -14,7 +12,7 @@ void default_task_task(void *argument) {
 TaskHandle_t create_default_task_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        default_task_task,            // Task function
+        default_task_task,            
         "Default Task",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/DAQ/CLI/cli_input_task.h"
 
 // Task: CLI Input
@@ -14,7 +12,7 @@ void cli_input_task(void *argument) {
 TaskHandle_t create_cli_input_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        cli_input_task,            // Task function
+        cli_input_task,            
         "CLI Input",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters

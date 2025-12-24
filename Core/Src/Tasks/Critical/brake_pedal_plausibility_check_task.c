@@ -1,37 +1,25 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/Critical/brake_pedal_plausibility_check_task.h"
-#include "app.h"
 
 void brake_pedal_plausibility_check_task(void *argument) {
     volatile app_data_t *data = (app_data_t *) argument;
-    MotorControl_t *motorControl = &data->motorControl;
-
     TickType_t start = xTaskGetTickCount();
 
     for (;;) {
-        int16_t throttle = (int16_t)getThrottle();
-        // Check to see if it is pressed, currently at 10%
-        bool brake_engaged = data->brake_level > 100;
-        if (throttle > 250 && brake_engaged && motorControl->opState == enabled) {
-            motorControl->plaus_fault = true;
-            motorControl->opState = plausibility_error;
-        } else if (throttle < 50) {
-            if (!motorControl->fault) { // Only reset if no other fault exists
-                motorControl->plaus_fault = false;
-                motorControl->opState = enabled;
-            }
+        if (data->throttle_level > BPPS_THROTTLE_ENABLED && data->brake_level > BPPS_BRAKE_TRESH) {
+            data->motorControl.input_faults.bpps_fault = 1;
+        } else if (data->throttle_level < BPPS_THROTTLE_DISABLED) {
+            data->motorControl.input_faults.bpps_fault = 0;
         }     
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(BPPS_DELAY_MS));
     }
 }
 
 TaskHandle_t create_brake_pedal_plausibility_check_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        brake_pedal_plausibility_check_task,            // Task function
+        brake_pedal_plausibility_check_task,            
         "Brake Pedal Plausibility Check",               // Task name (string)
-        256,                     // Stack size (words, adjust as needed)
+        BPPS_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
         &handle                  // Task handle

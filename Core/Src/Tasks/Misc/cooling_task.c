@@ -1,5 +1,3 @@
-#include "FreeRTOS.h"
-#include "task.h"
 #include "Tasks/Misc/cooling_task.h"
 
 // Task: Cooling
@@ -14,7 +12,7 @@ void cooling_task(void *argument) {
 TaskHandle_t create_cooling_task(void) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
-        cooling_task,            // Task function
+        cooling_task,            
         "Cooling",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters
