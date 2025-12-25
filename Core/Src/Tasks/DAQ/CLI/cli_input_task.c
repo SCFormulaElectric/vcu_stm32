@@ -8,6 +8,7 @@ void cli_input_task(void *argument) {
     uint8_t index = 0;
     memset(&cli_buffer, 0, sizeof(cli_buffer));
     for (;;) {
+        TickType_t start = xTaskGetTickCount();
         uint8_t ch;
         if (xQueueReceive(data->cli_queue, &ch, CLI_TICKS_TO_WAIT))
         {
@@ -25,7 +26,7 @@ void cli_input_task(void *argument) {
                 }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(CLI_TASK_DELAY_MS));
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(CLI_TASK_DELAY_MS));
     }
 }
 
@@ -68,6 +69,6 @@ task_entry_t create_cli_input_task(void) {
     );
     task_entry_t entry;
     entry.handle = handle;
-    entry.name = "cli"
+    entry.name = "cli";
     return entry;
 }

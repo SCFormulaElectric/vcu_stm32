@@ -6,16 +6,19 @@ void motor_controller_task(void *argument) {
     app_data_t *data = (app_data_t *)argument;
     volatile MotorControl_t *motorControl = &data->motorControl;
 
-    TickType_t start = xTaskGetTickCount();
     state_t task_state = STATE_DISABLE;
     bool disabled_sent = true;
-
+    
     motorControl->lastTorqueCommand = 0;
     can_message_t free_roll = create_motor_controller_command(0, 0, true, false, false, false, 0);
     can_message_t clear_fault = create_motor_controller_rw_command(20, 1, 0);
-
+    
     for (;;) {
-
+        TickType_t start = xTaskGetTickCount();
+        if (data->car_state != CAR_ENABLE){
+            vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
+            continue;
+        }
         switch(task_state) {
             case STATE_ENABLE:
                 uint16_t throttle = data->throttle_level;  
@@ -74,8 +77,9 @@ void motor_controller_task(void *argument) {
                 (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
                 break;
 
+            }
+
             vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
-        }
     }
 }
 
@@ -91,7 +95,7 @@ task_entry_t create_motor_controller_task(app_data_t *data) {
     );
     task_entry_t entry;
     entry.handle = handle;
-    entry.name = "motor_controller"
+    entry.name = "motor_controller";
     return entry;
 }
 

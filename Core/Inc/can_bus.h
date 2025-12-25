@@ -1,3 +1,5 @@
+#ifndef CAN_BUS_H
+#define CAN_BUS_H
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 #include "FreeRTOS.h"
@@ -19,3 +21,8 @@ typedef struct {
     uint32_t tx_id;
     uint8_t  tx_packet[8];
 } can_message_t;
+
+extern CAN_HandleTypeDef hcan1;
+extern CAN_TxHeaderTypeDef tx_header;
+extern CAN_RxHeaderTypeDef rx_header;
+#endif

@@ -1,8 +1,7 @@
 #ifndef SD_CARD_TASK_H
 #define SD_CARD_TASK_H
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include "app.h"
 
 
 void sd_card_task(void *argument);

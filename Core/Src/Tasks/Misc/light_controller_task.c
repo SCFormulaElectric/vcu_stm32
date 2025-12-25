@@ -4,8 +4,9 @@
 
 void light_controller_task(void *argument) {
     for (;;) {
+        TickType_t start = xTaskGetTickCount();
         // TODO: Implement Light Controller functionality
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(1000));
     }
 }
 

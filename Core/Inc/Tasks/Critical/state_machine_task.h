@@ -1,13 +1,17 @@
 #ifndef STATE_MACHINE_TASK_H
 #define STATE_MACHINE_TASK_H
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include "app.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_gpio.h"
+#include "digital_pins.h"
 
+#define STATE_MACHINE_DELAY_MS          1000
+#define STATE_MACHINE_STACK_SIZE_WORDS  256
+#define BUZZ_TIMEOUT_SECONDS            3
+#define BRAKE_THRESHOLD                 100
 
 void state_machine_task(void *argument);
-
-
 task_entry_t create_state_machine_task(void);
 
 #endif /* STATE_MACHINE_TASK_H */

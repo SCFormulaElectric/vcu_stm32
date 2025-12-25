@@ -23,6 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "adc.h"
+#include "can_bus.h"
+#include "digital_pins.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -246,17 +248,58 @@ static void MX_ADC1_Init(void)
 static void MX_GPIO_Init(void)
 {
   /* USER CODE BEGIN MX_GPIO_Init_1 */
+  GPIO_InitTypeDef TSMS_GPIO = {0};
+  GPIO_InitTypeDef R2D_GPIO = {0};
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
+  TSMS_GPIO.Pin = TSMS_PIN;
+  TSMS_GPIO.Mode = GPIO_MODE_INPUT;   // Input mode
+  TSMS_GPIO.Pull = GPIO_PULLUP;       // Pull-up resistor
+  HAL_GPIO_Init(GPIOA, &TSMS_GPIO);
+
+  R2D_GPIO.Pin = R2D_PIN;
+  R2D_GPIO.Mode = GPIO_MODE_INPUT;   // Input mode
+  R2D_GPIO.Pull = GPIO_PULLUP;       // Pull-up resistor
+  HAL_GPIO_Init(GPIOA, &R2D_GPIO);
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-
+static void MX_CAN1_Init(void)
+{
+ 
+  /* USER CODE BEGIN CAN1_Init 0 */
+ 
+  /* USER CODE END CAN1_Init 0 */
+ 
+  /* USER CODE BEGIN CAN1_Init 1 */
+ 
+  /* USER CODE END CAN1_Init 1 */
+  hcan1.Instance = CAN1;
+  hcan1.Init.Prescaler = 16;
+  hcan1.Init.Mode = CAN_MODE_NORMAL;
+  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan1.Init.TimeSeg1 = CAN_BS1_1TQ;
+  hcan1.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan1.Init.TimeTriggeredMode = DISABLE;
+  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoWakeUp = DISABLE;
+  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.ReceiveFifoLocked = DISABLE;
+  hcan1.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CAN1_Init 2 */
+ 
+  /* USER CODE END CAN1_Init 2 */
+ 
+}
 /* USER CODE END 4 */
 
 

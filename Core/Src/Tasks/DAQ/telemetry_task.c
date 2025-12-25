@@ -4,8 +4,9 @@
 
 void telemetry_task(void *argument) {
     for (;;) {
+        TickType_t start = xTaskGetTickCount();
         // TODO: Implement Telemetry functionality
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(1000));
     }
 }
 
@@ -21,6 +22,6 @@ task_entry_t create_telemetry_task(void) {
     );
     task_entry_t entry;
     entry.handle = handle;
-    entry.name = "telemetry"
+    entry.name = "telemetry";
     return entry;
 }

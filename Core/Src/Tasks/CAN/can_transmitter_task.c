@@ -48,6 +48,6 @@ task_entry_t create_can_transmitter_task(app_data_t *data) {
     );
     task_entry_t entry;
     entry.handle = handle;
-    entry.name = "can_transmitter"
+    entry.name = "can_transmitter";
     return entry;
 }

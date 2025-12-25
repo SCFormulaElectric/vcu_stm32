@@ -15,6 +15,9 @@ static uint8_t CAN_TX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_MESSAGE_SIZE ];
 
 const size_t CLI_TASK_COUNT = sizeof(cli_tasks) / sizeof(cli_tasks[0]);
 void create_app(){
+    car_state_t car_state = CAR_IDLE;
+    app.car_state = car_state;
+
     memset(&app, 0, sizeof(app));
     app.startup_mode = ALL;
 
@@ -25,7 +28,7 @@ void create_app(){
 
     // CAN BUS STUFF
     // Todo @aut - These are not referencing the right things right now.
-    app.can_bus.hcan = &hcan1;
+    app.can_bus.hcan      = &hcan1;
     app.can_bus.tx_header = &tx_header;
     app.can_bus.rx_header = &rx_header;
     

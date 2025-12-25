@@ -5,11 +5,17 @@
 #include "canbus.h"
 #include "can_bus.h"
 
+#define CAN_RECV_DELAY_MS 10
+
 // Motor Controller IDs
 #define MOTOR_CONTROLLER_ID_MIN 0x0A0
 #define MOTOR_CONTROLLER_ID_MAX 0x0AF
 #define IS_MOTOR_CONTROLLER_ID(id) ((id) >= MOTOR_CONTROLLER_ID_MIN && (id) <= MOTOR_CONTROLLER_ID_MAX)
 
+//Dashboard IDS
+#define DASHBOARD_ID_MIN
+#define DASHBOARD_ID_MAX
+#define IS_DASHBOARD_ID(id) ((id) >= DASHBOARD_ID_MIN && (id) <= DASHBOARD_ID_MAX)
 /*0x0A0 Slow/10 Hz Temperatures #1 0x0001
 0x0A1 Slow/10 Hz Temperatures #2 0x0002
 0x0A2 Slow/10 Hz Temperatures #3 0x0004
@@ -31,7 +37,7 @@ Information 0x2000
 
 void can_receiver_task(void *argument);
 void process_MC_msg(app_data_t *data, can_message_t message);
-
+void process_Dashboard_msg(app_data_t *data, can_message_t message);
 
 task_entry_t create_can_receiver_task(void);
 

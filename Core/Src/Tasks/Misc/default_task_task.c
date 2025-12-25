@@ -4,8 +4,9 @@
 
 void default_task_task(void *argument) {
     for (;;) {
+        TickType_t start = xTaskGetTickCount();
         // TODO: Implement Default Task functionality
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(1000));
     }
 }
 

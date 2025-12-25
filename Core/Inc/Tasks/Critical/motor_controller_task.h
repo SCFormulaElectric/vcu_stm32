@@ -17,7 +17,6 @@ typedef enum {
 
 
 void motor_controller_task(void *argument);
-
 can_message_t create_motor_controller_command(uint16_t torque, uint16_t speed, uint16_t torque_limit, 
     uint_8 direction, uint_8 inverter_en, uint_8 inverter_discharge, uint_8 speed_mode_enable);
 

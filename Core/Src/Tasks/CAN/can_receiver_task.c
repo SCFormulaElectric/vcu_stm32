@@ -4,14 +4,20 @@ void can_receiver_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
     QueueHandle_t queue = data->can_rx_queue;
     can_message_t msg;
+
     for (;;) {
         // TODO: Implement CAN Receiver functionality
+        TickType_t start = xTaskGetTickCount();
         if (xQueueReceive(queue, &msg, portMAX_DELAY))
         {
             if (IS_MOTOR_CONTROLLER_ID(msg.tx_id)) {
                 process_MC_msg(data, msg);
             }
+            else if (IS_DASHBOARD_ID(msg.tx_id)) {
+                process_Dashboard_msg(data, msg);
+            }
         }
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(CAN_RECV_DELAY_MS));
     }
 }
 
@@ -39,6 +45,11 @@ void process_MC_msg(app_data_t *data, can_message_t message) {
     }
 }
 
+void process_Dashboard_msg(app_data_t *data, can_message_t message) {
+
+}
+
+
 task_entry_t create_can_receiver_task(app_data_t *data) {
     TaskHandle_t handle = NULL;
     xTaskCreate(
@@ -51,6 +62,6 @@ task_entry_t create_can_receiver_task(app_data_t *data) {
     );
     task_entry_t entry;
     entry.handle = handle;
-    entry.name = "can_recv"
+    entry.name = "can_recv";
     return entry;
 }

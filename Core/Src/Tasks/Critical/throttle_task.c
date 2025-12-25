@@ -4,6 +4,7 @@ void throttle_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
 
     for (;;) {
+        TickType_t start = xTaskGetTickCount();
         uint16_t input_1 = adc_buffer[THROTTLE_PIN1];
         uint16_t input_2 = adc_buffer[THROTTLE_PIN2];
         uint16_t throttle_1 = map_to_percentage(input_1, THROTTLE_PIN1_MIN, THROTTLE_PIN1_MAX); 
@@ -19,7 +20,7 @@ void throttle_task(void *argument) {
             data->throttle_level = 0;
         }
         
-        vTaskDelay(pdMS_TO_TICKS(THROTTLE_TASK_DELAY_MS));
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(THROTTLE_TASK_DELAY_MS));
     }
 }
 
@@ -35,7 +36,7 @@ task_entry_t create_throttle_task(app_data_t *data) {
     );
     task_entry_t entry;
     entry.handle = handle;
-    entry.name = "throttle"
+    entry.name = "throttle";
     return entry;
 }
 

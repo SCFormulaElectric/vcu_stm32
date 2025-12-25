@@ -38,28 +38,26 @@ typedef enum {
 } StartUpMode;
 
 typedef enum {
-    S0,
-	S1,
-	S2
-} system_state_t;
+    CAR_IDLE,
+    CAR_PREPARE,
+    CAR_ENABLE,
+} car_state_t;
 
 typedef struct {
     const char *name;
     TaskHandle_t *handle;
 } task_entry_t;
 
-extern volatile system_state_t extern_curr_state;
-
 typedef struct app_data_s {
 	// Task handles
 	task_entry_t task_entires[NUM_TASKS];
 
     StartUpMode  startup_mode;
-
 	can_bus_t      can_bus;
 	MotorControl_t motorControl;
 	QueueHandle_t  cli_queue;
-
+	
+	volatile car_state_t car_state;
 	volatile uint16_t throttle_level;
 	volatile uint16_t brake_level;
 
@@ -67,6 +65,5 @@ typedef struct app_data_s {
 
 
 void create_app();
-uint16_t getThrottle();
 
 #endif /* APP_H */
