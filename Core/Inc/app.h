@@ -1,6 +1,7 @@
 #ifndef APP_H
 #define APP_H
 
+#include <stdint.h>
 #include "motor_control.h"
 #include "can_bus.h"
 #include "FreeRTOS.h"
@@ -21,16 +22,14 @@
 #define sd_card_PRIO 6
 #define cli_input_PRIO 6
 
-#define motor_control_interval 25
-#define MAX_TORQUE 300 
-
 #define NUM_TASKS 14
 
 #define CLI_QUEUE_LENGTH    10
 #define CLI_ITEM_SIZE       sizeof(char)
 
 #define CAN_QUEUE_LENGTH    10
-#define CAN_MESSAGE_SIZE    sizeof(can_message_t)
+#define CAN_TX_MESSAGE_SIZE    sizeof(can_tx_message_t)
+#define CAN_RX_MESSAGE_SIZE    sizeof(can_rx_message_t)
 
 typedef enum {
     ALL,

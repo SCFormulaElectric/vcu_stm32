@@ -3,7 +3,7 @@
 void can_receiver_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
     QueueHandle_t queue = data->can_rx_queue;
-    can_message_t msg;
+    can_message_rx_t msg;
 
     for (;;) {
         // TODO: Implement CAN Receiver functionality
@@ -21,7 +21,7 @@ void can_receiver_task(void *argument) {
     }
 }
 
-void process_MC_msg(app_data_t *data, can_message_t message) {
+void process_MC_msg(app_data_t *data, can_message_rx_t message) {
     if (msg.tx_id == MC_temp1_addr) {
         data->motorControl.temp.INV_Module_A_Temp       = ((uint16_t)msg.tx_packet[1] << 8) | msg.tx_packet[0];
         data->motorControl.temp.INV_Module_B_Temp       = ((uint16_t)msg.tx_packet[3] << 8) | msg.tx_packet[2];
@@ -45,7 +45,7 @@ void process_MC_msg(app_data_t *data, can_message_t message) {
     }
 }
 
-void process_Dashboard_msg(app_data_t *data, can_message_t message) {
+void process_Dashboard_msg(app_data_t *data, can_message_rx_t message) {
 
 }
 

@@ -36,8 +36,8 @@ Information 0x2000
 
 
 void can_receiver_task(void *argument);
-void process_MC_msg(app_data_t *data, can_message_t message);
-void process_Dashboard_msg(app_data_t *data, can_message_t message);
+void process_MC_msg(app_data_t *data, can_rx_message_t message);
+void process_Dashboard_msg(app_data_t *data, can_rx_message_t message);
 
 task_entry_t create_can_receiver_task(void);
 

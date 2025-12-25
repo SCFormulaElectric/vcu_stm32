@@ -2,16 +2,18 @@
 #include "tasks.h"
 #include "handles.h"
 
-static app_data_t app = {0};
+app_data_t app = {0};
 static MotorControl_t motor = {0};
 
+static can_bus_t can_bus = {0};
 static StaticQueue_t CLI_QUEUE;
 static uint8_t CLI_Q_STORAGE[ CLI_QUEUE_LENGTH * CLI_ITEM_SIZE ];
 
 static StaticQueue_t CAN_RX_Q;
-static uint8_t CAN_RX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_MESSAGE_SIZE ];
+static uint8_t CAN_RX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_RX_MESSAGE_SIZE ];
 static StaticQueue_t CAN_TX_Q;
-static uint8_t CAN_TX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_MESSAGE_SIZE ];
+static uint8_t CAN_TX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_TX_MESSAGE_SIZE ];
+static task_entry_t entries[NUM_TASKS] = {0};
 
 void create_app(){
     app.startup_mode = ALL;
@@ -25,20 +27,16 @@ void create_app(){
     app.motorControl = motor;
     
     // CAN BUS STUFF
-    // Todo @aut - These are not referencing the right things right now.
-    app.can_bus.hcan      = &hcan1;
-    app.can_bus.tx_header = &tx_header;
-    app.can_bus.rx_header = &rx_header;
-
-    app.can_bus.tx_mailbox = 0;
+    app.can_bus = can_bus;
+    app.can_bus.hcan = &hcan1;
     QueueHandle_t can_rx_q_handle;
     QueueHandle_t can_tx_q_handle;
     can_rx_q_handle = xQueueCreateStatic( CAN_QUEUE_LENGTH,
-                                CAN_MESSAGE_SIZE,
+                                CAN_RX_MESSAGE_SIZE,
                                 CAN_RX_Q_STORAGE,
                                 &CAN_RX_Q );
     can_tx_q_handle = xQueueCreateStatic( CAN_QUEUE_LENGTH,
-                                CAN_MESSAGE_SIZE,
+                                CAN_TX_MESSAGE_SIZE,
                                 CAN_TX_Q_STORAGE,
                                 &CAN_TX_Q );
     configASSERT(can_rx_q_handle);
@@ -54,7 +52,7 @@ void create_app(){
                                 &CLI_QUEUE );
     configASSERT(cli_q_handle);
     app.cli_queue = cli_q_handle;
-    task_entry_t entries[NUM_TASKS] = {0};
+
     app.task_entires = entries;
 
     assert((app.task_entires[throttle_task_index] = create_throttle_task(&app)) != NULL);
@@ -73,12 +71,12 @@ void create_app(){
     assert((app.task_entires[telemetry_task_index] = create_telemetry_task(&app)) != NULL);
     if(app.startup_mode == ALL) {
         for (size_t i = 0; i < NUM_TASKS; i++) {
-            TaskHandle_t handle = app->task_entires[i].handle;
+            TaskHandle_t handle = app.task_entires[i].handle;
             vTaskResume(handle);
         }
     }
     else if(app.startup_mode == CLI_ONLY) {
-        TaskHandle_t cli_handle = app->task_entires[cli_input_task_index].handle;
+        TaskHandle_t cli_handle = app.task_entires[cli_input_task_index].handle;
         vTaskResume(cli_handle);
     }
 }
