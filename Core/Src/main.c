@@ -25,6 +25,9 @@
 #include "adc.h"
 #include "can_bus.h"
 #include "digital_pins.h"
+#include "stm32f4xx_hal_adc.h"
+//Todo @[aut] uart wasnt included in this :(
+#include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,7 +47,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-
+//Todo @[aut] uart wasnt included in this :(
+UART_HandleTypeDef huart2;
+static uint8_t rx_byte;
 /* USER CODE BEGIN PV */
 
 uint16_t adc_buffer[ADC_CHANNEL_COUNT];
@@ -61,7 +66,6 @@ static void MX_ADC1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /**
@@ -94,7 +98,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ADC1_Init();
+  //Todo @[aut] CAN wasnt included in this :(
   MX_CAN1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_ADC_Start_DMA(&hadc1,
                         (uint32_t*)adc_buffer,
@@ -128,6 +134,9 @@ int main(void)
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
+  //Todo @[aut] uart wasnt included in this :(
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 

@@ -13,23 +13,23 @@ static uint8_t CAN_RX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_MESSAGE_SIZE ];
 static StaticQueue_t CAN_TX_Q;
 static uint8_t CAN_TX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_MESSAGE_SIZE ];
 
-const size_t CLI_TASK_COUNT = sizeof(cli_tasks) / sizeof(cli_tasks[0]);
 void create_app(){
+    app.startup_mode = ALL;
+    
     car_state_t car_state = CAR_IDLE;
     app.car_state = car_state;
-
-    app.startup_mode = ALL;
 
     // MOTOR CONTROLLER STUFF
     app.throttle_level = 0;
     app.brake_level = 0;
-
+    app.motorControl = motor;
+    
     // CAN BUS STUFF
     // Todo @aut - These are not referencing the right things right now.
     app.can_bus.hcan      = &hcan1;
     app.can_bus.tx_header = &tx_header;
     app.can_bus.rx_header = &rx_header;
-    
+
     app.can_bus.tx_mailbox = 0;
     QueueHandle_t can_rx_q_handle;
     QueueHandle_t can_tx_q_handle;
@@ -43,9 +43,9 @@ void create_app(){
                                 &CAN_TX_Q );
     configASSERT(can_rx_q_handle);
     configASSERT(can_tx_q_handle);
-    
     app.can_bus.can_rx_queue = can_rx_q_handle;
     app.can_bus.can_tx_queue = can_tx_q_handle;
+
     // CLI STUFF
     QueueHandle_t cli_q_handle;
     cli_q_handle = xQueueCreateStatic( CLI_QUEUE_LENGTH,

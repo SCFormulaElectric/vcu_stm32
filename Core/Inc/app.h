@@ -52,14 +52,14 @@ typedef struct app_data_s {
 	// Task handles
 	task_entry_t task_entires[NUM_TASKS];
 
-    StartUpMode  startup_mode;
-	can_bus_t      can_bus;
-	MotorControl_t motorControl;
-	QueueHandle_t  cli_queue;
-	
-	volatile car_state_t car_state;
-	volatile uint16_t throttle_level;
-	volatile uint16_t brake_level;
+    StartUpMode         startup_mode;
+	can_bus_t           can_bus;
+	MotorControl_t      motorControl;
+	QueueHandle_t       cli_queue;
+
+	volatile car_state_t    car_state;
+	volatile uint16_t       throttle_level;
+	volatile uint16_t       brake_level;
 
 } app_data_t;
 
