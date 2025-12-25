@@ -11,7 +11,6 @@ void motor_controller_task(void *argument) {
     
     motorControl->lastTorqueCommand = 0;
     const can_tx_message_t free_roll_can_msg = create_motor_controller_command(0, 0, 0, 0, 0, 0, 0);
-    const can_tx_message_t enable_can_msg = create_motor_controller_command(0, 0, 0, 1, 0, 0, 0);
     const can_tx_message_t clear_fault_can_msg = create_motor_controller_rw_command(20, 1, 0);
     
     for (;;) {
@@ -54,7 +53,6 @@ void motor_controller_task(void *argument) {
                     //if there is no motor control fault go straight to enable
                     if (!is_fault(motorControl->fault)) {
                         task_state = STATE_ENABLE;
-                        (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
                         motorControl->lastTorqueCommand = 0;
                     }
                     //if there is a motor control fault that can be cleared clear it

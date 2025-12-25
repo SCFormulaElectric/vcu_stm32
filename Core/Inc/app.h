@@ -9,6 +9,8 @@
 #include "adc.h"
 #include "queue.h"
 
+#define NUM_TASKS 14
+
 #define BPPS_PRIO 13
 #define APPS_PRIO 13
 #define IWT_PRIO  13
@@ -22,14 +24,15 @@
 #define sd_card_PRIO 6
 #define cli_input_PRIO 6
 
-#define NUM_TASKS 14
-
 #define CLI_QUEUE_LENGTH    10
 #define CLI_ITEM_SIZE       sizeof(char)
 
 #define CAN_QUEUE_LENGTH    10
 #define CAN_TX_MESSAGE_SIZE    sizeof(can_tx_message_t)
 #define CAN_RX_MESSAGE_SIZE    sizeof(can_rx_message_t)
+
+
+#define ADC_TO_VOLTS(x) ((x) / 818.0f)
 
 typedef enum {
     ALL,
