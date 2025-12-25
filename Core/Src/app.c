@@ -73,12 +73,12 @@ void create_app(){
     assert((app.task_entires[telemetry_task_index] = create_telemetry_task(&app)) != NULL);
     if(app.startup_mode == ALL) {
         for (size_t i = 0; i < NUM_TASKS; i++) {
-            TaskHandle_t handle = *(app->task_entires[i].handle);
+            TaskHandle_t handle = app->task_entires[i].handle;
             vTaskResume(handle);
         }
     }
     else if(app.startup_mode == CLI_ONLY) {
-        TaskHandle_t cli_handle = *(app->task_entires[cli_input_task_index].handle);
+        TaskHandle_t cli_handle = app->task_entires[cli_input_task_index].handle;
         vTaskResume(cli_handle);
     }
 }
