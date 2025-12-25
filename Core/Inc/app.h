@@ -45,7 +45,7 @@ typedef enum {
 
 typedef struct {
     const char *name;
-    TaskHandle_t *handle;
+    TaskHandle_t handle;
 } task_entry_t;
 
 typedef struct app_data_s {

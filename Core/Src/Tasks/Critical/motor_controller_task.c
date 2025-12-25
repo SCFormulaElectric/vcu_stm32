@@ -84,17 +84,17 @@ void motor_controller_task(void *argument) {
 }
 
 task_entry_t create_motor_controller_task(app_data_t *data) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
+    
     xTaskCreate(
         motor_controller_task,   
         "Motor Controller",      // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         MCT_PRIO + 1,            // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+    vTaskSuspend(entry.handle);
     entry.name = "motor_controller";
     return entry;
 }

@@ -51,17 +51,19 @@ void process_Dashboard_msg(app_data_t *data, can_message_t message) {
 
 
 task_entry_t create_can_receiver_task(app_data_t *data) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
+
     xTaskCreate(
-        can_receiver_task,            
-        "CAN Receiver",               // Task name (string)
-        256,                     // Stack size (words, adjust as needed)
-        data,                    // Task parameters
-        CAN_PRIO,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        can_receiver_task,
+        "CAN Receiver",
+        256,
+        data,
+        CAN_PRIO,
+        &entry.handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+
+    vTaskSuspend(entry.handle);
+
     entry.name = "can_recv";
     return entry;
 }

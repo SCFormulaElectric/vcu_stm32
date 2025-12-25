@@ -11,14 +11,16 @@ void light_controller_task(void *argument) {
 }
 
 task_entry_t create_light_controller_task(void) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
     xTaskCreate(
         light_controller_task,            
         "Light Controller",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    return handle;
+    vTaskSuspend(entry.handle);
+    entry.name = "light_controller";
+    return entry;
 }

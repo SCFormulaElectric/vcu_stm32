@@ -42,17 +42,17 @@ void state_machine_task(void *argument) {
 }
 
 task_entry_t create_state_machine_task(void) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
     xTaskCreate(
         state_machine_task,            
         "State Machine",               // Task name (string)
         STATE_MACHINE_STACK_SIZE_WORDS,// Stack size (words, adjust as needed)
         NULL,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+    
+    vTaskSuspend(entry.handle);
     entry.name = "state_machine";
     return entry;
 }

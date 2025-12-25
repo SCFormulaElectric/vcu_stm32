@@ -25,17 +25,17 @@ void throttle_task(void *argument) {
 }
 
 task_entry_t create_throttle_task(app_data_t *data) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
     xTaskCreate(
         throttle_task,            
         "APPS Implausibility Check",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         APPS_PRIO,               // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+    
+    vTaskSuspend(entry.handle);
     entry.name = "throttle";
     return entry;
 }

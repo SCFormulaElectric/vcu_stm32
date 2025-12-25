@@ -1,7 +1,7 @@
 #ifndef DASH_TASK_H
 #define DASH_TASK_H
 
-#include "task.h"
+#include "app.h"
 
 
 void dash_task(void *argument);

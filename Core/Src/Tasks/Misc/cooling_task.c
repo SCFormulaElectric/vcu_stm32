@@ -11,14 +11,16 @@ void cooling_task(void *argument) {
 }
 
 task_entry_t create_cooling_task(void) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
     xTaskCreate(
         cooling_task,            
         "Cooling",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    return handle;
+    vTaskSuspend(entry.handle);
+    entry.name = "cooling";
+    return entry;
 }

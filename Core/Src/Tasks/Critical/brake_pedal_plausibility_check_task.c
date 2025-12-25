@@ -23,18 +23,19 @@ void brake_pedal_plausibility_check_task(void *argument) {
     }
 }
 
-task_entry_t create_brake_pedal_plausibility_check_task(void) {
-    TaskHandle_t handle = NULL;
+task_entry_t create_brake_pedal_plausibility_check_task(app_data_t *data) {
+    task_entry_t entry = {0};
+    
     xTaskCreate(
         brake_pedal_plausibility_check_task,            
         "Brake Pedal Plausibility Check",               // Task name (string)
         BPPS_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
-        NULL,                    // Task parameters
+        data,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+
+    vTaskSuspend(entry.handle);
     entry.name = "bpps";
     return entry;
 }

@@ -1,7 +1,7 @@
 #ifndef DEFAULT_TASK_TASK_H
 #define DEFAULT_TASK_TASK_H
 
-#include "task.h"
+#include "app.h"
 
 
 void default_task_task(void *argument);

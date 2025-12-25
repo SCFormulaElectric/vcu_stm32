@@ -1,6 +1,7 @@
 #ifndef LIGHT_CONTROLLER_TASK_H
 #define LIGHT_CONTROLLER_TASK_H
-#include "task.h"
+
+#include "app.h"
 void light_controller_task(void *argument);
 
 

@@ -37,17 +37,19 @@ void can_transmitter_task(void *argument)
 
 
 task_entry_t create_can_transmitter_task(app_data_t *data) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
+
     xTaskCreate(
         can_transmitter_task,
-        "CAN Transceiver",
+        "CAN Transmitter",
         256,
         data,
         CAN_PRIO,
-        &handle
+        &entry.handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+
+    vTaskSuspend(entry.handle);
+
     entry.name = "can_transmitter";
     return entry;
 }

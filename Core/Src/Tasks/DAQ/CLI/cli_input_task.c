@@ -4,9 +4,8 @@
 
 void cli_input_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
-    char cli_buffer[CLI_BUFFER_SIZE];
+    char cli_buffer[CLI_BUFFER_SIZE] = {0};
     uint8_t index = 0;
-    memset(&cli_buffer, 0, sizeof(cli_buffer));
     for (;;) {
         TickType_t start = xTaskGetTickCount();
         uint8_t ch;
@@ -58,17 +57,17 @@ void process_cmd(app_data_t *app, const char *cmd) {
     // printf("Unknown task: %s\n", task_name);
 }
 task_entry_t create_cli_input_task(void) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
     xTaskCreate(
         cli_input_task,            
         "CLI Input",               // Task name (string)
         CLI_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    task_entry_t entry;
-    entry.handle = handle;
+    
+    vTaskSuspend(entry.handle);
     entry.name = "cli";
     return entry;
 }

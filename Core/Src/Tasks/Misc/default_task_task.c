@@ -11,14 +11,16 @@ void default_task_task(void *argument) {
 }
 
 task_entry_t create_default_task_task(void) {
-    TaskHandle_t handle = NULL;
+    task_entry_t entry = {0};
     xTaskCreate(
         default_task_task,            
         "Default Task",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         NULL,                    // Task parameters
         tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
-        &handle                  // Task handle
+        &entry.handle             // Task handle
     );
-    return handle;
+    vTaskSuspend(entry.handle);
+    entry.name = "default";
+    return entry;
 }

@@ -2,8 +2,8 @@
 #include "tasks.h"
 #include "handles.h"
 
-static app_data_t app;
-static MotorControl_t motor;
+static app_data_t app = {0};
+static MotorControl_t motor = {0};
 
 static StaticQueue_t CLI_QUEUE;
 static uint8_t CLI_Q_STORAGE[ CLI_QUEUE_LENGTH * CLI_ITEM_SIZE ];
@@ -18,11 +18,9 @@ void create_app(){
     car_state_t car_state = CAR_IDLE;
     app.car_state = car_state;
 
-    memset(&app, 0, sizeof(app));
     app.startup_mode = ALL;
 
     // MOTOR CONTROLLER STUFF
-    memset(&motor, 0, sizeof(motor));
     app.throttle_level = 0;
     app.brake_level = 0;
 
@@ -56,28 +54,32 @@ void create_app(){
                                 &CLI_QUEUE );
     configASSERT(cli_q_handle);
     app.cli_queue = cli_q_handle;
-    task_entry_t entries[NUM_TASKS];
-    memset(&entries, 0, sizeof(entries));
+    task_entry_t entries[NUM_TASKS] = {0};
     app.task_entires = entries;
 
+    assert((app.task_entires[throttle_task_index] = create_throttle_task(&app)) != NULL);
+    assert((app.task_entires[brake_pedal_plausibility_check_task_index] = create_brake_pedal_plausibility_check_task(&app)) != NULL);
+    assert((app.task_entires[can_receiver_task_index] = create_can_receiver_task(&app)) != NULL);
+    assert((app.task_entires[can_transmitter_task_index] = create_can_transmitter_task(&app)) != NULL);
+    assert((app.task_entires[cli_input_task_index] = create_cli_input_task(&app)) != NULL);
+    assert((app.task_entires[cooling_task_index] = create_cooling_task(&app)) != NULL);
+    assert((app.task_entires[dash_task_index] = create_dash_task(&app)) != NULL);
+    assert((app.task_entires[default_task_task_index] = create_default_task_task(&app)) != NULL);
+    assert((app.task_entires[independent_watchdog_task_index] = create_independent_watchdog_task(&app)) != NULL);
+    assert((app.task_entires[light_controller_task_index] = create_light_controller_task(&app)) != NULL);
+    assert((app.task_entires[motor_controller_task_index] = create_motor_controller_task(&app)) != NULL);
+    assert((app.task_entires[sd_card_task_index] = create_sd_card_task(&app)) != NULL);
+    assert((app.task_entires[state_machine_task_index] = create_state_machine_task(&app)) != NULL);
+    assert((app.task_entires[telemetry_task_index] = create_telemetry_task(&app)) != NULL);
     if(app.startup_mode == ALL) {
-        assert((app.task_entires[throttle_task_index] = create_throttle_task(&app)) != NULL);
-        assert((app.task_entires[brake_pedal_plausibility_check_task_index] = create_brake_pedal_plausibility_check_task(&app)) != NULL);
-        assert((app.task_entires[can_receiver_task_index] = create_can_receiver_task(&app)) != NULL);
-        assert((app.task_entires[can_transmitter_task_index] = create_can_transmitter_task(&app)) != NULL);
-        assert((app.task_entires[cli_input_task_index] = create_cli_input_task(&app)) != NULL);
-        assert((app.task_entires[cooling_task_index] = create_cooling_task(&app)) != NULL);
-        assert((app.task_entires[dash_task_index] = create_dash_task(&app)) != NULL);
-        assert((app.task_entires[default_task_task_index] = create_default_task_task(&app)) != NULL);
-        assert((app.task_entires[independent_watchdog_task_index] = create_independent_watchdog_task(&app)) != NULL);
-        assert((app.task_entires[light_controller_task_index] = create_light_controller_task(&app)) != NULL);
-        assert((app.task_entires[motor_controller_task_index] = create_motor_controller_task(&app)) != NULL);
-        assert((app.task_entires[sd_card_task_index] = create_sd_card_task(&app)) != NULL);
-        assert((app.task_entires[state_machine_task_index] = create_state_machine_task(&app)) != NULL);
-        assert((app.task_entires[telemetry_task_index] = create_telemetry_task(&app)) != NULL);
+        for (size_t i = 0; i < NUM_TASKS; i++) {
+            TaskHandle_t handle = *(app->task_entires[i].handle);
+            vTaskResume(handle);
+        }
     }
     else if(app.startup_mode == CLI_ONLY) {
-        assert((app.task_entires[cli_input_task_index] = create_cli_input_task(&app)) != NULL);
+        TaskHandle_t cli_handle = *(app->task_entires[cli_input_task_index].handle);
+        vTaskResume(cli_handle);
     }
 }
 
