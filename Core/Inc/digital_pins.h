@@ -5,6 +5,6 @@
 
 #define TSMS_PIN GPIO_PIN_0
 #define R2D_PIN GPIO_PIN_1
-
+#define BMS_PIN GPIO_PIN_2
 
 #endif

@@ -8,7 +8,7 @@
 #include "digital_pins.h"
 
 #define STATE_MACHINE_DELAY_MS          1000
-#define STATE_MACHINE_STACK_SIZE_WORDS  256
+#define STATE_MACHINE_STACK_SIZE        KILOBYTE
 #define BUZZ_TIMEOUT_SECONDS            3
 #define BRAKE_THRESHOLD                 100
 

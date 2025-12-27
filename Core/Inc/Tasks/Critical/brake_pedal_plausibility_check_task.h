@@ -8,7 +8,7 @@
 #define BPPS_THROTTLE_ENABLED   250
 #define BPPS_THROTTLE_DISABLED  50
 #define BPPS_BRAKE_TRESH        100
-#define BPPS_STACK_SIZE_WORDS   256
+#define BPPS_STACK_SIZE         KILOBYTE
 
 #define BRAKE_PIN1          3
 #define BRAKE_PIN2          4

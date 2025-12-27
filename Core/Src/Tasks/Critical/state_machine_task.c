@@ -47,7 +47,7 @@ task_entry_t create_state_machine_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         state_machine_task,            
         "State Machine",               // Task name (string)
-        STATE_MACHINE_STACK_SIZE_WORDS,// Stack size (words, adjust as needed)
+        STATE_MACHINE_STACK_SIZE,// Stack size (words, adjust as needed)
         data,                    // Task parameters
         state_machine_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle

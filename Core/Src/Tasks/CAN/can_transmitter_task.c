@@ -68,8 +68,8 @@ task_entry_t create_can_transmitter_task(app_data_t *data) {
 
     BaseType_t status = xTaskCreate(
         can_transmitter_task,
-        "CAN Transmitter",
-        256,
+        "CAN TX",
+        CAN_TX_STACK_SIZE,
         data,
         CAN_PRIO,
         &entry.handle
@@ -78,6 +78,6 @@ task_entry_t create_can_transmitter_task(app_data_t *data) {
     configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
 
-    entry.name = "can_transmitter";
+    entry.name = "can_tx";
     return entry;
 }

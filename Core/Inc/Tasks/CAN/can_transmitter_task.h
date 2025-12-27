@@ -5,6 +5,7 @@
 #include "watchdog_tasks_defs.h"
 #include "can_bus.h"
 
+#define CAN_TX_STACK_SIZE KILOBYTE
 #define CAN_TX_MAILBOX_WAIT_MS  5
 #define CAN_TX_TASK_DELAY_MS 15
 void can_transmitter_task(void *argument);

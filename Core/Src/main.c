@@ -254,6 +254,7 @@ static void MX_GPIO_Init(void)
   /* USER CODE BEGIN MX_GPIO_Init_1 */
   GPIO_InitTypeDef TSMS_GPIO = {0};
   GPIO_InitTypeDef R2D_GPIO = {0};
+  GPIO_InitTypeDef BMS_GPIO = {0};
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
@@ -269,6 +270,11 @@ static void MX_GPIO_Init(void)
   R2D_GPIO.Mode = GPIO_MODE_INPUT;   // Input mode
   R2D_GPIO.Pull = GPIO_PULLUP;       // Pull-up resistor
   HAL_GPIO_Init(GPIOA, &R2D_GPIO);
+
+  BMS_GPIO.Pin = BMS_PIN;
+  BMS_GPIO.Mode = GPIO_MODE_INPUT;   // Input mode
+  BMS_GPIO.Pull = GPIO_PULLUP;       // Pull-up resistor
+  HAL_GPIO_Init(GPIOA, &BMS_GPIO);
   /* USER CODE END MX_GPIO_Init_2 */
 }
 

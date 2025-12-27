@@ -5,7 +5,8 @@
 #include "watchdog_tasks_defs.h"
 #include "can_bus.h"
 
-#define CAN_RECV_DELAY_MS 10
+#define CAN_RX_DELAY_MS 20
+#define CAN_RX_STACK_SIZE 2*KILOBYTE
 
 // Motor Controller IDs
 #define MOTOR_CONTROLLER_ID_MIN 0x0A0

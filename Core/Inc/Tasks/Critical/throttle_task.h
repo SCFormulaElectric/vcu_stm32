@@ -5,6 +5,8 @@
 #include "watchdog_tasks_defs.h"
 #include <stdint.h>
 #include "semphr.h"
+
+#define THROTTLE_STACK_SIZE KILOBYTE
 #define MAX_PEDAL_DIFFERENCE 100
 #define THROTTLE_FAULT_TOLERANCE 150
 #define THROTTLE_TASK_DELAY_MS 50

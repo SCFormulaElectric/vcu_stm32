@@ -90,7 +90,7 @@ task_entry_t create_motor_controller_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         motor_controller_task,   
         "Motor Controller",      // Task name (string)
-        256,                     // Stack size (words, adjust as needed)
+        MC_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         MCT_PRIO,            // Priority (adjust as needed)
         &entry.handle             // Task handle

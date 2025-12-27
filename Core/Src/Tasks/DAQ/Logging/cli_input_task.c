@@ -1,6 +1,5 @@
 #include "Tasks/DAQ/Logging/cli_input_task.h"
 
-
 // Task: CLI Input
 static cli_output_entry_t cli_output[NUM_PERIODIC_OUTPUTS] = {0};
 
@@ -127,7 +126,7 @@ task_entry_t create_cli_input_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         cli_input_task,            
         "CLI Input",               // Task name (string)
-        CLI_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
+        CLI_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         cli_input_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle

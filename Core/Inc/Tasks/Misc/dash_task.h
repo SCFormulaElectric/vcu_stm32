@@ -4,7 +4,7 @@
 #include "app.h"
 #include "watchdog_tasks_defs.h"
 
-
+#define DASHBOARD_STACK_SIZE    KILOBYTE
 void dash_task(void *argument);
 
 

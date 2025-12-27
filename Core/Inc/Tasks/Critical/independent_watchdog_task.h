@@ -5,7 +5,7 @@
 #include "watchdog_tasks_defs.h"
 
 #define IDWG_WINDOW_MS 3000
-#define IDWG_STACK_SIZE_WORDS 128
+#define IDWG_STACK_SIZE KILOBYTE
 void independent_watchdog_task(void *argument);
 task_entry_t create_independent_watchdog_task(void);
 

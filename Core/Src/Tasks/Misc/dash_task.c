@@ -19,7 +19,7 @@ task_entry_t create_dash_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         dash_task,            
         "Dash",               // Task name (string)
-        256,                     // Stack size (words, adjust as needed)
+        DASHBOARD_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         dash_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle

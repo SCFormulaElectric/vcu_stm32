@@ -44,7 +44,7 @@ task_entry_t create_independent_watchdog_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         independent_watchdog_task,
         "Independent Watchdog",               // Task name (string)
-        IDWG_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
+        IDWG_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         IDWG_PRIO,    // Priority (adjust as needed)
         &entry.handle

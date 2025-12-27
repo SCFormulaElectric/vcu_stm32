@@ -43,6 +43,9 @@
 // Helper function for all tasks!
 #define ADC_TO_VOLTS(x) ((x) / 818.0f)
 
+// Stack sizes
+#define KILOBYTE 256
+
 typedef enum {
     START_ALL,
     START_CLI_ONLY,

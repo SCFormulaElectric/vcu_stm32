@@ -30,7 +30,7 @@ task_entry_t create_brake_pedal_plausibility_check_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         brake_pedal_plausibility_check_task,            
         "Brake Pedal Plausibility Check",               // Task name (string)
-        BPPS_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
+        BPPS_STACK_SIZE,
         data,                    // Task parameters
         BPPS_PRIO,    // Priority (adjust as needed)
         &entry.handle

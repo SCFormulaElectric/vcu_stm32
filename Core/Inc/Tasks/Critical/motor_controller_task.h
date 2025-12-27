@@ -14,6 +14,8 @@
 #define motor_control_interval 25
 #define MAX_TORQUE 300 
 
+#define MC_STACK_SIZE 2*KILOBYTE
+
 typedef enum {
     STATE_DISABLE,
     STATE_ENABLE,

@@ -18,7 +18,7 @@ void can_receiver_task(void *argument) {
             }
         }
         xEventGroupSetBits(data->idwg_group, WD_CAN_RX);
-        vTaskDelayUntil(&start, pdMS_TO_TICKS(CAN_RECV_DELAY_MS));
+        vTaskDelayUntil(&start, pdMS_TO_TICKS(CAN_RX_DELAY_MS));
     }
 }
 
@@ -57,7 +57,7 @@ task_entry_t create_can_receiver_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         can_receiver_task,
         "CAN Receiver",
-        256,
+        CAN_RX_STACK_SIZE,
         data,
         CAN_PRIO,
         &entry.handle
@@ -66,6 +66,6 @@ task_entry_t create_can_receiver_task(app_data_t *data) {
     configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
 
-    entry.name = "can_recv";
+    entry.name = "can_rx";
     return entry;
 }

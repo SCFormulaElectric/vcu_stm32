@@ -29,7 +29,7 @@ task_entry_t create_throttle_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         throttle_task,            
         "APPS Implausibility Check",               // Task name (string)
-        256,                     // Stack size (words, adjust as needed)
+        THROTTLE_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         APPS_PRIO,               // Priority (adjust as needed)
         &entry.handle             // Task handle

@@ -4,6 +4,7 @@
 #include "app.h"
 #include "watchdog_tasks_defs.h"
 
+#define SD_CARD_STACK_SIZE      8*KILOBYTE
 
 void sd_card_task(void *argument);
 

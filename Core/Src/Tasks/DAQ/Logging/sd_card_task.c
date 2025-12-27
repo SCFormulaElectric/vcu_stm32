@@ -17,7 +17,7 @@ task_entry_t create_sd_card_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         sd_card_task,            
         "SD Card",               // Task name (string)
-        256,                     // Stack size (words, adjust as needed)
+        SD_CARD_STACK_SIZE, // Stack size (words, adjust as needed)
         data,                    // Task parameters
         sd_card_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
@@ -25,6 +25,6 @@ task_entry_t create_sd_card_task(app_data_t *data) {
     
     configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
-    entry.name = "sd";
+    entry.name = "sd_card";
     return entry;
 }

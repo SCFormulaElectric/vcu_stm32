@@ -19,7 +19,7 @@ task_entry_t create_default_task_task(app_data_t *data) {
     BaseType_t status = xTaskCreate(
         default_task_task,            
         "Default Task",               // Task name (string)
-        DEFAULT_TASK_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
+        DEFAULT_TASK_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
         default_task_prio,    // Priority (adjust as needed)
         &entry.handle             // Task handle
