@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "usbd_cdc_if.h" 
+#include "main.h"
 #include "motor_control.h"
 #include "can_bus.h"
 #include "FreeRTOS.h"
@@ -14,7 +14,9 @@
 #include "adc.h"
 #include "queue.h"
 #include "event_groups.h"
+// todo: check these imports
 #include "ff.h"
+#include "uusbfn.h"
 
 #define NUM_TASKS 14
 
