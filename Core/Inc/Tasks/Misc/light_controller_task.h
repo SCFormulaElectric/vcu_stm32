@@ -2,6 +2,7 @@
 #define LIGHT_CONTROLLER_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 void light_controller_task(void *argument);
 
 

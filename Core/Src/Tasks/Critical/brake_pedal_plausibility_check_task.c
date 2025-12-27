@@ -19,6 +19,7 @@ void brake_pedal_plausibility_check_task(void *argument) {
         } else if (throttle_level < BPPS_THROTTLE_DISABLED) {
             data->motorControl.input_faults.bpps_fault = 0;
         }     
+        xEventGroupSetBits(data->idwg_group, WD_BPPS);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(BPPS_DELAY_MS));
     }
 }
@@ -26,15 +27,16 @@ void brake_pedal_plausibility_check_task(void *argument) {
 task_entry_t create_brake_pedal_plausibility_check_task(app_data_t *data) {
     task_entry_t entry = {0};
     
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         brake_pedal_plausibility_check_task,            
         "Brake Pedal Plausibility Check",               // Task name (string)
         BPPS_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
+        BPPS_PRIO,    // Priority (adjust as needed)
         &entry.handle
     );
 
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
     entry.name = "bpps";
     return entry;

@@ -33,7 +33,8 @@ void cooling_task(void *argument) {
         float after_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltageAfter);
         float temp_after_Radiator = thermistorToCelsius(after_radiator_resistance);
         // Logger::info("Temperature after Radiator: %f", temp_after_Radiator);
-
+        
+        xEventGroupSetBits(data->idwg_group, WD_COOLING);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(COOLING_DELAY_MS));
     }
 }
@@ -60,16 +61,17 @@ float thermistorToCelsius(const float reading) {
 }
 
 
-task_entry_t create_cooling_task(void) {
+task_entry_t create_cooling_task(app_data_t *data) {
     task_entry_t entry = {0};
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         cooling_task,            
         "Cooling",               // Task name (string)
         COOLING_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
-        NULL,                    // Task parameters
+        data,                    // Task parameters
         Cooling_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
     entry.name = "cooling";
     return entry;

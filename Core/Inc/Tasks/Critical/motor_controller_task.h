@@ -2,6 +2,7 @@
 #define MOTOR_CONTROLLER_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 #include "throttle_task.h"
 #include "can_bus.h"
 #include "motor_control.h"

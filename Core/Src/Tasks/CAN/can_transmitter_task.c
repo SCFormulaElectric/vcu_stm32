@@ -55,6 +55,7 @@ void can_transmitter_task(void *argument)
         {
             //LOG CAN BUS FAULT HERE
         }
+        xEventGroupSetBits(data->idwg_group, WD_CAN_TX);
         vTaskDelayUntil(&start, CAN_TX_TASK_DELAY_MS)
     }
 }
@@ -65,7 +66,7 @@ void can_transmitter_task(void *argument)
 task_entry_t create_can_transmitter_task(app_data_t *data) {
     task_entry_t entry = {0};
 
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         can_transmitter_task,
         "CAN Transmitter",
         256,
@@ -74,6 +75,7 @@ task_entry_t create_can_transmitter_task(app_data_t *data) {
         &entry.handle
     );
 
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
 
     entry.name = "can_transmitter";

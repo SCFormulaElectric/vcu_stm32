@@ -2,6 +2,7 @@
 #define throttle_task_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 #include <stdint.h>
 #include "semphr.h"
 #define MAX_PEDAL_DIFFERENCE 100

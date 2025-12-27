@@ -93,9 +93,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ADC1_Init();
-  //Todo @[aut] CAN wasnt included in this :(
-  MX_CAN1_Init();
-  MX_USART2_UART_Init();
+  //Todo @[aut] THE FOLLOWING ART NOT INCLUDED wasnt included in this but are needed:(
+  MX_CAN_Init();
+  MX_USB_PCD_Init();
+  MX_IWDG_Init();
+
   /* USER CODE BEGIN 2 */
   HAL_ADC_Start_DMA(&hadc1,
                         (uint32_t*)adc_buffer,

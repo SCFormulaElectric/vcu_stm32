@@ -25,6 +25,7 @@ void cli_input_task(void *argument) {
                 }
             }
         }
+        xEventGroupSetBits(data->idwg_group, WD_CLI_INPUT);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(CLI_TASK_DELAY_MS));
     }
 }
@@ -40,8 +41,8 @@ void process_cmd(app_data_t *app, const char *cmd) {
 
     // Look up task by name
     for (size_t i = 0; i < NUM_TASKS; i++) {
-        if (strcmp(task_name, app->task_entires[i].name) == 0) {
-            TaskHandle_t handle = *(app->task_entires[i].handle);
+        if (strcmp(task_name, app->task_entries[i].name) == 0) {
+            TaskHandle_t handle = *(app->task_entries[i].handle);
             if (value == 0) {
                 vTaskSuspend(handle);
                 // printf("%s suspended\n", task_name);
@@ -56,17 +57,18 @@ void process_cmd(app_data_t *app, const char *cmd) {
     }
     // printf("Unknown task: %s\n", task_name);
 }
-task_entry_t create_cli_input_task(void) {
+task_entry_t create_cli_input_task(app_data_t *data) {
     task_entry_t entry = {0};
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         cli_input_task,            
         "CLI Input",               // Task name (string)
         CLI_STACK_SIZE_WORDS,                     // Stack size (words, adjust as needed)
-        NULL,                    // Task parameters
-        tskIDLE_PRIORITY + 1,    // Priority (adjust as needed)
+        data,                    // Task parameters
+        cli_input_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
     
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
     entry.name = "cli";
     return entry;

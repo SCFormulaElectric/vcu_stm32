@@ -19,14 +19,14 @@ void throttle_task(void *argument) {
             data->motorControl.input_faults.apps_fault = 1;
             data->throttle_level = 0;
         }
-        
+        xEventGroupSetBits(data->idwg_group, WD_THROTTLE);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(THROTTLE_TASK_DELAY_MS));
     }
 }
 
 task_entry_t create_throttle_task(app_data_t *data) {
     task_entry_t entry = {0};
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         throttle_task,            
         "APPS Implausibility Check",               // Task name (string)
         256,                     // Stack size (words, adjust as needed)
@@ -35,6 +35,7 @@ task_entry_t create_throttle_task(app_data_t *data) {
         &entry.handle             // Task handle
     );
     
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
     entry.name = "throttle";
     return entry;

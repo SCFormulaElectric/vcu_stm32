@@ -2,6 +2,7 @@
 #define SD_CARD_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 
 
 void sd_card_task(void *argument);

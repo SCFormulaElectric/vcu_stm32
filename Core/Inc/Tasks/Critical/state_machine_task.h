@@ -2,6 +2,7 @@
 #define STATE_MACHINE_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "digital_pins.h"

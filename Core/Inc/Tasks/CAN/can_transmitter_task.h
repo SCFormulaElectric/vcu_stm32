@@ -2,6 +2,7 @@
 #define can_transmitter_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 #include "can_bus.h"
 
 #define CAN_TX_MAILBOX_WAIT_MS  5

@@ -2,6 +2,7 @@
 #define CLI_INPUT_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 #include <string.h>
 #include <stdio.h>
 

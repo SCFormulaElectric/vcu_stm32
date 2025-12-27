@@ -17,6 +17,7 @@ void can_receiver_task(void *argument) {
                 process_Dashboard_msg(data, msg);
             }
         }
+        xEventGroupSetBits(data->idwg_group, WD_CAN_RX);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(CAN_RECV_DELAY_MS));
     }
 }
@@ -53,7 +54,7 @@ void process_Dashboard_msg(app_data_t *data, can_message_rx_t message) {
 task_entry_t create_can_receiver_task(app_data_t *data) {
     task_entry_t entry = {0};
 
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         can_receiver_task,
         "CAN Receiver",
         256,
@@ -62,6 +63,7 @@ task_entry_t create_can_receiver_task(app_data_t *data) {
         &entry.handle
     );
 
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
 
     entry.name = "can_recv";

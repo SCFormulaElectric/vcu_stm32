@@ -17,6 +17,7 @@ void motor_controller_task(void *argument) {
         TickType_t start = xTaskGetTickCount();
         // Check we are in the correct car state first
         if (data->car_state != CAR_ENABLE){
+            xEventGroupSetBits(data->idwg_group, WD_MOTOR_CONTROLLER);
             vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
             continue;
         }
@@ -78,7 +79,7 @@ void motor_controller_task(void *argument) {
                 break;
 
             }
-
+            xEventGroupSetBits(data->idwg_group, WD_MOTOR_CONTROLLER);
             vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
     }
 }
@@ -86,14 +87,15 @@ void motor_controller_task(void *argument) {
 task_entry_t create_motor_controller_task(app_data_t *data) {
     task_entry_t entry = {0};
     
-    xTaskCreate(
+    BaseType_t status = xTaskCreate(
         motor_controller_task,   
         "Motor Controller",      // Task name (string)
         256,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        MCT_PRIO + 1,            // Priority (adjust as needed)
+        MCT_PRIO,            // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
+    configASSERT(status == pdPASS);
     vTaskSuspend(entry.handle);
     entry.name = "motor_controller";
     return entry;

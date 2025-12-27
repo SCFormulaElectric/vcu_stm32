@@ -2,7 +2,7 @@
 #define CAN_RECEIVER_TASK_H
 
 #include "app.h"
-#include "canbus.h"
+#include "watchdog_tasks_defs.h"
 #include "can_bus.h"
 
 #define CAN_RECV_DELAY_MS 10

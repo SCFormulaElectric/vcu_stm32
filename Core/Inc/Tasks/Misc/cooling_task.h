@@ -2,6 +2,7 @@
 #define COOLING_TASK_H
 
 #include "app.h"
+#include "watchdog_tasks_defs.h"
 #include <math.h>
 
 #define THERMISTOR_PIN1 5
