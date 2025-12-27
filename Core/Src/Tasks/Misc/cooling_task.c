@@ -27,13 +27,20 @@ void cooling_task(void *argument) {
         float convertedVoltage = ADC_TO_VOLTS(reading1);
         float before_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltage);
         float temp_before_Radiator = thermistorToCelsius(before_radiator_resistance);
-        // Logger::info("Temperature before Radiator: %f", temp_before_Radiator);
-
+        
         float convertedVoltageAfter = ADC_TO_VOLTS(reading2);
         float after_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltageAfter);
         float temp_after_Radiator = thermistorToCelsius(after_radiator_resistance);
-        // Logger::info("Temperature after Radiator: %f", temp_after_Radiator);
         
+        // printing shenangins because no floating points
+        // Convert to integer representation (one decimal place)
+        int temp_before_int = (int)(temp_before_Radiator * 10); 
+        int temp_after_int  = (int)(temp_after_Radiator * 10); 
+
+
+        serial_print("Temperature before Radiator: %d.%d\r\n", temp_before_int / 10, temp_before_int % 10);
+        serial_print("Temperature after Radiator: %d.%d\r\n", temp_after_int / 10, temp_after_int % 10);
+    
         xEventGroupSetBits(data->idwg_group, WD_COOLING);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(COOLING_DELAY_MS));
     }

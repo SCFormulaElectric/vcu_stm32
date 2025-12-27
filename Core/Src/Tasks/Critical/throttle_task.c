@@ -63,23 +63,23 @@ uint8_t invalid_signal_check(uint16_t input_1, uint16_t input_2) {
     return 0;
 }
 
-// TODO: Add some sort of logging here to see what is actually throwing errors
 uint8_t out_of_bounds(uint16_t level1, uint16_t level2) {
     if (level1 < 0 - THROTTLE_FAULT_TOLERANCE) {
+        serial_print("Throttle 1 too small: %d", level1);
         return 1;
     }
-    // level 1 to high 
     if (level1 > 1000 + THROTTLE_FAULT_TOLERANCE) {
+        serial_print("Throttle 1 too large: %d", level1);
         return 1;
     }
 
-    // level 2 to low
     if (level2 < 0 - THROTTLE_FAULT_TOLERANCE) {
+        serial_print("Throttle 2 too small: %d", level2);
         return 1;
     }
 
-    // level 2 to high 
     if (level2 > 1000 + THROTTLE_FAULT_TOLERANCE) {
+        serial_print("Throttle 2 too large: %d", level2);
         return 1;
     }
     
@@ -95,15 +95,14 @@ uint8_t out_of_bounds(uint16_t level1, uint16_t level2) {
 }
 
 
-// TODO: Add some sort of logging here to see what is actually throwing errors
 uint8_t apps_faulted(uint16_t level1, uint16_t level2) {
-    // level1 is > MAX_ERROR% more than level2
     if (level1 > level2 + MAX_PEDAL_DIFFERENCE) {
+        serial_print("Throttle 1 too large for Throttle 2. %d >> %d", level1, level2);
         return 1;
     }
     
-    // level2 is > MAX_ERROR% more than level1
     if (level2 > level1 + MAX_PEDAL_DIFFERENCE) {
+        serial_print("Throttle 1 too small for Throttle 2. %d << %d", level1, level2);
         return 1;
     }
 }

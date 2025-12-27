@@ -21,13 +21,22 @@ void independent_watchdog_task(void *argument) {
         {
             HAL_IWDG_Refresh(&hiwdg);
         }
-        else
+        else 
         {
-            // Log failure! Reboot reboot.
+            EventBits_t missing = WD_ALL_TASKS & (~bits);
+            for (size_t i = 0; i < NUM_TASKS; i++) 
+            {
+                if (missing & (1 << i)) 
+                {
+                    serial_print("IDWG failed: task %s did not set its bit\r\n", app.task_entries[i].name);
+                }
+            }
+            for (;;) {
+                // Wait for IWDG to reset the MCU
+            }
         }
     }
 }
-
 
 task_entry_t create_independent_watchdog_task(app_data_t *data) {
     task_entry_t entry = {0};

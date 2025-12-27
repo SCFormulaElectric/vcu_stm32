@@ -2,6 +2,11 @@
 #define APP_H
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "usbd_cdc_if.h" 
 #include "motor_control.h"
 #include "can_bus.h"
 #include "FreeRTOS.h"
@@ -39,10 +44,15 @@
 #define ADC_TO_VOLTS(x) ((x) / 818.0f)
 
 typedef enum {
-    ALL,
-    CLI_ONLY,
-    NO_IDWG
+    START_ALL,
+    START_CLI_ONLY,
+    START_NO_IDWG
 } StartUpMode;
+
+typedef enum {
+    LOG_ALL,
+    LOG_NONE
+} LogLevel;
 
 typedef enum {
     CAR_IDLE,
@@ -60,6 +70,7 @@ typedef struct app_data_s {
 	task_entry_t task_entries[NUM_TASKS];
 
     StartUpMode         startup_mode;
+    LogLevel            log_level;
 	can_bus_t           can_bus;
 	MotorControl_t      motorControl;
 	QueueHandle_t       cli_queue;
@@ -72,5 +83,6 @@ typedef struct app_data_s {
 
 
 void create_app();
+void serial_print(const char *str);
 
 #endif /* APP_H */

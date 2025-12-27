@@ -15,8 +15,8 @@ static task_entry_t entries[NUM_TASKS] = {0};
 static EventGroupHandle_t wd_event_group;
 
 void create_app(){
-    app.startup_mode = ALL;
-    
+    app.startup_mode = START_ALL;
+    app.log_level = LOG_ALL;
     app.car_state = CAR_IDLE;
 
     // IDWG
@@ -89,3 +89,14 @@ void create_app(){
     }
 }
 
+void serial_print(const char *fmt, ...) {
+    if (app.log_level == LOG_ALL){
+        char buf[128];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, args);
+        va_end(args);
+    
+        CDC_Transmit_FS((uint8_t*)buf, strlen(buf));
+    }
+}

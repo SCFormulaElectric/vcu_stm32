@@ -1,4 +1,5 @@
-#include "Tasks/DAQ/CLI/cli_input_task.h"
+#include "Tasks/DAQ/Logging/cli_input_task.h"
+
 
 // Task: CLI Input
 
@@ -20,7 +21,7 @@ void cli_input_task(void *argument) {
                 index++;
 
                 if (index >= CLI_BUFFER_SIZE) {
-                    // todo: Log buffer overflow error
+                    serial_print("Command too long! Please refresh the buffer");
                     index = 0;
                 }
             }
@@ -35,28 +36,47 @@ void process_cmd(app_data_t *app, const char *cmd) {
     int value = -1;
 
     if (sscanf(cmd, "%31[^=]=%d", task_name, &value) != 2) {
-        // printf("Invalid command format: %s\n", cmd);
+        serial_print("Invalid command format: %s\n", cmd);
         return;
     }
 
-    // Look up task by name
+    start_stop_task(app, task_name, value);
+
+    serial_print("Unknown task: %s\n", task_name);
+}
+
+void start_stop_task(app_data_t *app, const char* task_name, int value) {
     for (size_t i = 0; i < NUM_TASKS; i++) {
         if (strcmp(task_name, app->task_entries[i].name) == 0) {
-            TaskHandle_t handle = *(app->task_entries[i].handle);
+            TaskHandle_t handle = app->task_entries[i].handle;
             if (value == 0) {
                 vTaskSuspend(handle);
-                // printf("%s suspended\n", task_name);
+                serial_print("%s suspended\n", task_name);
             } else if (value == 1) {
                 vTaskResume(handle);
-                // printf("%s resumed\n", task_name);
+                serial_print("%s resumed\n", task_name);
             } else {
-                // printf("Invalid value %d for %s, use 0 or 1\n", value, task_name);
+                serial_print("Invalid value %d for %s, use 0 or 1\n", value, task_name);
             }
             return;
         }
     }
-    // printf("Unknown task: %s\n", task_name);
 }
+
+void send_task_help(app_data_t *app) {
+    char buf[128];
+
+    serial_print("Task names:\r\n{\r\n");
+
+    for (size_t i = 0; i < NUM_TASKS; i++) {
+        snprintf(buf, sizeof(buf), "  %s\r\n", app->task_entries[i].name);
+        serial_print(buf);
+    }
+
+    serial_print("}\r\nUse: <task_name>=1 to resume, <task_name>=0 to stop\r\n");
+}
+
+
 task_entry_t create_cli_input_task(app_data_t *data) {
     task_entry_t entry = {0};
     BaseType_t status = xTaskCreate(
