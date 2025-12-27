@@ -35,14 +35,17 @@ void process_cmd(app_data_t *app, const char *cmd) {
     char task_name[32];
     int value = -1;
 
-    if (sscanf(cmd, "%31[^=]=%d", task_name, &value) != 2) {
-        serial_print("Invalid command format: %s\n", cmd);
+    if (strcmp(cmd, "h") == 0 || strcmp(cmd, "H") == 0) {
+        send_task_help(app);
         return;
     }
 
-    start_stop_task(app, task_name, value);
-
-    serial_print("Unknown task: %s\n", task_name);
+    if (sscanf(cmd, "%31[^=]=%d", task_name, &value) == 2) {
+        start_stop_task(app, task_name, value);
+        return;
+    }
+    
+    serial_print("Invalid command format: %s\n", cmd);
 }
 
 void start_stop_task(app_data_t *app, const char* task_name, int value) {
@@ -64,6 +67,7 @@ void start_stop_task(app_data_t *app, const char* task_name, int value) {
 }
 
 void send_task_help(app_data_t *app) {
+
     char buf[128];
 
     serial_print("Task names:\r\n{\r\n");
@@ -74,6 +78,7 @@ void send_task_help(app_data_t *app) {
     }
 
     serial_print("}\r\nUse: <task_name>=1 to resume, <task_name>=0 to stop\r\n");
+    serial_print("Enter: h for help\r\n");
 }
 
 
