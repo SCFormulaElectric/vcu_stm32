@@ -2,10 +2,10 @@
 #define STATE_MACHINE_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_gpio.h"
-#include "digital_pins.h"
+#include "Peripherals/digital_pins.h"
 
 #define STATE_MACHINE_DELAY_MS          1000
 #define STATE_MACHINE_STACK_SIZE        KILOBYTE

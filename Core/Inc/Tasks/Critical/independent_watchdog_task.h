@@ -2,7 +2,7 @@
 #define INDEPENDENT_WATCHDOG_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 
 #define IDWG_WINDOW_MS 3000
 #define IDWG_STACK_SIZE KILOBYTE

@@ -2,8 +2,8 @@
 #define CAN_RECEIVER_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
-#include "can_bus.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
+#include "Peripherals/can_bus.h"
 
 #define CAN_RX_DELAY_MS 20
 #define CAN_RX_STACK_SIZE 2*KILOBYTE

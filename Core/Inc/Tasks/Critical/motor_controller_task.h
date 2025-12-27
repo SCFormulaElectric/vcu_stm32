@@ -2,10 +2,10 @@
 #define MOTOR_CONTROLLER_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 #include "throttle_task.h"
-#include "can_bus.h"
-#include "motor_control.h"
+#include "Peripherals/can_bus.h"
+#include "Tasks/Task_Helper/motor_control.h"
 
 #define Forward  1
 #define Backward 0

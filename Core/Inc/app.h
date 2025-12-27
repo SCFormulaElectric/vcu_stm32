@@ -7,11 +7,12 @@
 #include <string.h>
 
 #include "main.h"
-#include "motor_control.h"
-#include "can_bus.h"
+#include "Tasks/Task_Helper/motor_control.h"
+#include "Peripherals/can_bus.h"
+#include "Peripherals/usb_conf.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "adc.h"
+#include "Peripherals/adc.h"
 #include "queue.h"
 #include "event_groups.h"
 // todo: check these imports

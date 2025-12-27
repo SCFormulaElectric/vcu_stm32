@@ -2,7 +2,7 @@
 #define CLI_INPUT_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_gpio.h"
 #include <string.h>

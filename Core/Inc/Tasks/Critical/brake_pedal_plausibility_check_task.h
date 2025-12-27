@@ -2,7 +2,7 @@
 #define BRAKE_PEDAL_PLAUSIBILITY_CHECK_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 #define BPPS_DELAY_MS           50
 
 #define BPPS_THROTTLE_ENABLED   250

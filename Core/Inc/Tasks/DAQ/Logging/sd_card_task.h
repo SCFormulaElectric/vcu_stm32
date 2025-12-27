@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 #include <stdio.h>
 #include <string.h>
 

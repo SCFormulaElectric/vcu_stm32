@@ -23,9 +23,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "adc.h"
-#include "can_bus.h"
-#include "digital_pins.h"
+#include "Peripherals/adc.h"
+#include "Peripherals/can_bus.h"
+#include "Peripherals/digital_pins.h"
+#include "Peripherals/usb_conf.h"
 #include "stm32f4xx_hal_adc.h"
 /* USER CODE END Includes */
 
@@ -58,12 +59,12 @@ SPI_HandleTypeDef hspi1;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
+// osThreadId_t defaultTaskHandle;
+// const osThreadAttr_t defaultTask_attributes = {
+//   .name = "defaultTask",
+//   .stack_size = 128 * 4,
+//   .priority = (osPriority_t) osPriorityNormal,
+// };
 /* USER CODE BEGIN PV */
 
 uint16_t adc_buffer[ADC_CHANNEL_COUNT];
@@ -105,7 +106,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  sd_card_owner = MCU_SD_CARD;
   /* USER CODE END Init */
 
   /* Configure the system clock */

@@ -2,7 +2,7 @@
 #define LIGHT_CONTROLLER_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 // I'm including the statemachine.h because it has the necessary defines 
 // for thresholds and includes
 #include "state_machine_task.h"

@@ -1,6 +1,6 @@
 #include "app.h"
-#include "tasks.h"
-#include "handles.h"
+#include "Tasks/Task_Helper/tasks.h"
+#include "Tasks/Task_Helper/handles.h"
 
 app_data_t app = {0};
 
@@ -56,19 +56,16 @@ void create_app(){
                                 &CLI_QUEUE );
     configASSERT(cli_q_handle);
     app.cli_queue = cli_q_handle;
-    
+
     // SD CARD STUFF
     char filename[32];
     sd_card.log_number = find_next_log_index();
     // Only proceed if the MCU owns the SD card
-    // Todo add these extern variables
-    if (disk_owner == MCU) {
+    if (sd_card_owner == MCU_SD_CARD) {
         f_mount(&sd_card.file_system, "", 1);
-
         snprintf(sd_card.filename, sizeof(sd_card.filename), "log_%lu.txt", sd_card.log_number);
         FRESULT file_result = f_open(&sd_card.file, sd_card.filename, FA_WRITE | FA_CREATE_NEW);
         configASSERT(file_result == FR_OK);
-
         sd_card.file_created = 1;
     }
     app.sd_card = sd_card;
@@ -96,11 +93,11 @@ void create_app(){
                 vTaskResume(handle);
             }
         }
-        if (app.startup_mode == ALL) {
+        if (app.startup_mode == START_ALL) {
             vTaskResume(app.task_entries[independent_watchdog_task_index].handle);
         }
     }
-    else if(app.startup_mode == CLI_ONLY) {
+    else if(app.startup_mode == START_CLI_ONLY) {
         TaskHandle_t cli_handle = app.task_entries[cli_input_task_index].handle;
         vTaskResume(cli_handle);
     }

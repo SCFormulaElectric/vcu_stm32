@@ -2,7 +2,7 @@
 #define TELEMETRY_TASK_H
 
 #include "app.h"
-#include "watchdog_tasks_defs.h"
+#include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 
 #define TELEMETRY_STACK_SIZE            2*KILOBYTE
 void telemetry_task(void *argument);
