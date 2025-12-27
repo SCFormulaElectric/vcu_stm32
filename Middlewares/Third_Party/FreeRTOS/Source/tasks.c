@@ -3185,7 +3185,7 @@ BaseType_t xReturn;
 
 	if( pxUnblockedTCB->uxPriority > pxCurrentTCB->uxPriority )
 	{
-		/* return 0 if the task removed from the event list has a higher
+		/* Return true if the task removed from the event list has a higher
 		priority than the calling task.  This allows the calling task to know if
 		it should force a context switch now. */
 		xReturn = pdTRUE;
@@ -4148,7 +4148,7 @@ TCB_t *pxTCB;
 					listSET_LIST_ITEM_VALUE( &( pxTCB->xEventListItem ), ( TickType_t ) configMAX_PRIORITIES - ( TickType_t ) pxTCB->uxPriority ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
 					prvAddTaskToReadyList( pxTCB );
 
-					/* return 0 to indicate that a context switch is required.
+					/* Return true to indicate that a context switch is required.
 					This is only actually required in the corner case whereby
 					multiple mutexes were held and the mutexes were given back
 					in an order different to that in which they were taken.
