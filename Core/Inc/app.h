@@ -14,6 +14,7 @@
 #include "adc.h"
 #include "queue.h"
 #include "event_groups.h"
+#include "ff.h"
 
 #define NUM_TASKS 14
 
@@ -68,6 +69,13 @@ typedef struct {
     TaskHandle_t handle;
 } task_entry_t;
 
+typedef struct {
+    FATFS file_system;
+    FIL file;
+    char file_created;
+    uint32_t log_number;
+} sd_card_t;
+
 typedef struct app_data_s {
 	// Task handles
 	task_entry_t task_entries[NUM_TASKS];
@@ -81,11 +89,12 @@ typedef struct app_data_s {
 	volatile car_state_t    car_state;
 	volatile uint16_t       throttle_level;
 	volatile uint16_t       brake_level;
-    EventGroupHandle_t idwg_group;
+    EventGroupHandle_t      idwg_group;
+    sd_card_t               sd_card;
 } app_data_t;
 
 
 void create_app();
 void serial_print(const char *str);
-
+uint32_t find_next_log_index(void);
 #endif /* APP_H */

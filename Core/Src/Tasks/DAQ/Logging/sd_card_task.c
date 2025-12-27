@@ -1,12 +1,11 @@
 #include "Tasks/DAQ/Logging/sd_card_task.h"
 
 // Task: SD Card
-
 void sd_card_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
+
     for (;;) {
         TickType_t start = xTaskGetTickCount();
-        // TODO: Implement SD Card functionality
         xEventGroupSetBits(data->idwg_group, WD_SD_CARD);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(1000));
     }
