@@ -15,12 +15,12 @@ void light_controller_task(void *argument) {
         }
 
         if (tsms != GPIO_PIN_SET) {
-            serial_print("TSMS FAULTED!");
+            serial_log("TSMS FAULTED!");
             // todo: ERROR OUT make the hoop light turn red
         }
 
         if (bms != GPIO_PIN_SET) {
-            serial_print("BMS FAULTED!");
+            serial_log("BMS FAULTED!");
             // todo: ERROR OUT make the hoop light turn red
         }
 

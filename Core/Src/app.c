@@ -11,13 +11,18 @@ static StaticQueue_t CAN_RX_Q;
 static uint8_t CAN_RX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_RX_MESSAGE_SIZE ];
 static StaticQueue_t CAN_TX_Q;
 static uint8_t CAN_TX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_TX_MESSAGE_SIZE ];
+
+static uint8_t LOG_Q_STORAGE[ LOG_QUEUE_LENGTH * LOG_MSG_SIZE ];
+static StaticQueue_t SD_CARD_Q;
+static QueueHandle_t sd_card_q_handle;
+sd_card_t sd_card = {0};
+
 static task_entry_t entries[NUM_TASKS] = {0};
 static EventGroupHandle_t wd_event_group;
-static sd_card_t sd_card = {0};
 void create_app(){
     // STARTUP CONFIGURATIONS
     app.startup_mode = START_ALL;
-    app.log_level = LOG_ALL;
+    app.log_level = LOG_SD_CARD;
 
     // IDWG
     wd_event_group = xEventGroupCreate();
@@ -58,16 +63,12 @@ void create_app(){
     app.cli_queue = cli_q_handle;
 
     // SD CARD STUFF
-    char filename[32];
-    sd_card.log_number = find_next_log_index();
-    // Only proceed if the MCU owns the SD card
-    if (sd_card_owner == MCU_SD_CARD) {
-        f_mount(&sd_card.file_system, "", 1);
-        snprintf(sd_card.filename, sizeof(sd_card.filename), "log_%lu.txt", sd_card.log_number);
-        FRESULT file_result = f_open(&sd_card.file, sd_card.filename, FA_WRITE | FA_CREATE_NEW);
-        configASSERT(file_result == FR_OK);
-        sd_card.file_created = 1;
-    }
+    sd_card_q_handle = xQueueCreateStatic( LOG_QUEUE_LENGTH,
+                                LOG_MSG_SIZE,
+                                LOG_Q_STORAGE,
+                                &SD_CARD_Q );
+    configASSERT(sd_card_q_handle != NULL);
+    sd_card.sd_card_q = sd_card_q_handle;
     app.sd_card = sd_card;
 
 
@@ -103,29 +104,41 @@ void create_app(){
     }
 }
 
-void serial_print(const char *fmt, ...) {
-    if (app.log_level == LOG_ALL){
-        char buf[128];
-        va_list args;
-        va_start(args, fmt);
-        vsnprintf(buf, sizeof(buf), fmt, args);
-        va_end(args);
-    
-        CDC_Transmit_FS((uint8_t*)buf, strlen(buf));
-    }
+void __serial_print(const char *str) {
+    CDC_Transmit_FS((uint8_t *)str, strlen(str));
 }
 
-uint32_t find_next_log_index(void) {
-    FILINFO fno;
-    char filename[32];
-    uint32_t index = 1;
-    while (1)
-    {
-        snprintf(filename, sizeof(filename), "log_%lu.txt", index);
-        if (f_stat(filename, &fno) != FR_OK)
-        {
-            return index;
+void serial_log(const char *fmt, ...)
+{
+    if (app.log_level == LOG_NONE) {
+        return;
+    }
+
+    log_msg_t log;
+
+    TickType_t ticks = xTaskGetTickCount();
+    uint32_t ms = (ticks * 1000UL) / configTICK_RATE_HZ;
+    uint32_t sec = ms / 1000;
+    uint32_t rem = ms % 1000;
+
+    char msg[96];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, args);
+    va_end(args);
+
+    snprintf(log.line, sizeof(log.line), "[%lu.%03lu] %s\r\n", sec, rem, msg);
+    __serial_print(log.line);
+
+    if (app.log_level == LOG_SERIAL) {
+        return;
+    }
+
+    if (sd_card_q_handle != NULL) {
+        BaseType_t status = xQueueSend(sd_card_q_handle, &log, 0);
+
+        if (status != pdPASS) {
+            __serial_print("Queue full for sd_card");
         }
-        index++;
     }
 }

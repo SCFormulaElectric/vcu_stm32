@@ -38,8 +38,8 @@ void cooling_task(void *argument) {
         int temp_after_int  = (int)(temp_after_Radiator * 10); 
 
 
-        serial_print("Temperature before Radiator: %d.%d\r\n", temp_before_int / 10, temp_before_int % 10);
-        serial_print("Temperature after Radiator: %d.%d\r\n", temp_after_int / 10, temp_after_int % 10);
+        serial_log("Temperature before Radiator: %d.%d\r\n", temp_before_int / 10, temp_before_int % 10);
+        serial_log("Temperature after Radiator: %d.%d\r\n", temp_after_int / 10, temp_after_int % 10);
     
         xEventGroupSetBits(data->idwg_group, WD_COOLING);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(COOLING_DELAY_MS));

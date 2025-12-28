@@ -24,7 +24,7 @@ void cli_input_task(void *argument) {
                 index++;
 
                 if (index >= CLI_BUFFER_SIZE) {
-                    serial_print("Command too long! Please refresh the buffer");
+                    serial_log("Command too long! Please refresh the buffer");
                     index = 0;
                 }
             }
@@ -54,9 +54,9 @@ void print_toggled_outputs() {
         uint16_t a_value4 = adc_buffer[3];
         uint16_t a_value5 = adc_buffer[4];
         uint16_t a_value6 = adc_buffer[5];
-        serial_print("ANO1: %u, ANO2: %u, ANO3: %u, ANO4: %u, ANO5: %u, ANO6: %u\r\n",
+        serial_log("ANO1: %u, ANO2: %u, ANO3: %u, ANO4: %u, ANO5: %u, ANO6: %u\r\n",
                     a_value1, a_value2, a_value3, a_value4, a_value5, a_value6);
-        serial_print("DIN1: %d, DIN2: %d\r\n", dpin1, dpin2);
+        serial_log("DIN1: %d, DIN2: %d\r\n", dpin1, dpin2);
     }
 }
 
@@ -79,7 +79,7 @@ void process_cmd(app_data_t *app, const char *cmd) {
         return;
     }
     
-    serial_print("Invalid command format: %s\n", cmd);
+    serial_log("Invalid command format: %s\n", cmd);
 }
 
 void start_stop_task(app_data_t *app, const char* task_name, int value) {
@@ -88,12 +88,12 @@ void start_stop_task(app_data_t *app, const char* task_name, int value) {
             TaskHandle_t handle = app->task_entries[i].handle;
             if (value == 0) {
                 vTaskSuspend(handle);
-                serial_print("%s suspended\n", task_name);
+                serial_log("%s suspended\n", task_name);
             } else if (value == 1) {
                 vTaskResume(handle);
-                serial_print("%s resumed\n", task_name);
+                serial_log("%s resumed\n", task_name);
             } else {
-                serial_print("Invalid value %d for %s, use 0 or 1\n", value, task_name);
+                serial_log("Invalid value %d for %s, use 0 or 1\n", value, task_name);
             }
             return;
         }
@@ -112,12 +112,12 @@ void send_task_help(app_data_t *app) {
             case eDeleted:   state_str = "Deleted"; break;
             default:         state_str = "Unknown"; break;
         }
-        serial_print("%s: %s\r\n", app->task_entries[i].name, state_str);
+        serial_log("%s: %s\r\n", app->task_entries[i].name, state_str);
     }
 
-    serial_print("\r\nUse: <task_name>=1 to resume, <task_name>=0 to stop\r\n");
-    serial_print("Enter: h for help\r\n");
-    serial_print("Enter: t to toggle printing IO pins\r\n");
+    serial_log("\r\nUse: <task_name>=1 to resume, <task_name>=0 to stop\r\n");
+    serial_log("Enter: h for help\r\n");
+    serial_log("Enter: t to toggle printing IO pins\r\n");
 }
 
 

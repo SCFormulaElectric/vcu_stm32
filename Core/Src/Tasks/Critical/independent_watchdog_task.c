@@ -28,7 +28,7 @@ void independent_watchdog_task(void *argument) {
             {
                 if (missing & (1 << i)) 
                 {
-                    serial_print("IDWG failed: task %s did not set its bit\r\n", app.task_entries[i].name);
+                    serial_log("IDWG failed: task %s did not set its bit\r\n", app.task_entries[i].name);
                 }
             }
             for (;;) {

@@ -42,7 +42,7 @@ void process_MC_msg(app_data_t *data, can_message_rx_t message) {
         data->motorControl.temp.INV_Torque_Shudder      = ((uint16_t)msg.tx_packet[7] << 8) | msg.tx_packet[6];
     }
     else {
-        serial_print("CAN address in MC range, but not recognized");
+        serial_log("CAN address in MC range, but not recognized");
     }
 }
 
