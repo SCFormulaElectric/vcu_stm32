@@ -11,17 +11,26 @@ void light_controller_task(void *argument) {
         tsms = HAL_GPIO_ReadPin(GPIOA, TSMS_PIN);
         bms = HAL_GPIO_ReadPin(GPIOA, BMS_PIN);
         if (data->brake_level > BRAKE_THRESHOLD) {
-            // todo: make the light turn red
+            HAL_GPIO_WritePin(GPIOA, BRAKE_LIGHT_PIN, GPIO_PIN_SET);
+        }
+        else {
+            HAL_GPIO_WritePin(GPIOA, BRAKE_LIGHT_PIN, GPIO_PIN_RESET);
         }
 
         if (tsms != GPIO_PIN_SET) {
             serial_log("TSMS FAULTED!");
-            // todo: ERROR OUT make the hoop light turn red
+            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_SET);
+        }
+        else {
+            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_RESET);
         }
 
         if (bms != GPIO_PIN_SET) {
             serial_log("BMS FAULTED!");
-            // todo: ERROR OUT make the hoop light turn red
+            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_SET);
+        }
+        else {
+            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_RESET);
         }
 
         xEventGroupSetBits(data->idwg_group, WD_LIGHT_CONTROLLER);
