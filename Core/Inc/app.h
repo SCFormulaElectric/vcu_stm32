@@ -15,8 +15,6 @@
 #include "Peripherals/adc.h"
 #include "queue.h"
 #include "event_groups.h"
-// todo: check these imports
-#include "uusbfn.h"
 
 #define NUM_TASKS 14
 

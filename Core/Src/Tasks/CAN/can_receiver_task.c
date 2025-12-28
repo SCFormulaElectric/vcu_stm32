@@ -6,9 +6,8 @@ void can_receiver_task(void *argument) {
     can_message_rx_t msg;
 
     for (;;) {
-        // TODO: Implement CAN Receiver functionality
         TickType_t start = xTaskGetTickCount();
-        if (xQueueReceive(queue, &msg, portMAX_DELAY))
+        if (xQueueReceive(queue, &msg, 0))
         {
             if (IS_MOTOR_CONTROLLER_ID(msg.tx_id)) {
                 process_MC_msg(data, msg);

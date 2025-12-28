@@ -6,7 +6,6 @@
 #include "queue.h"
 
 #define CAN_BUS_QUEUE_LENGTH 8
-//Todo: check if these fields should be volatile or not
 typedef struct {
     CAN_HandleTypeDef *hcan;
 	QueueHandle_t can_tx_queue;

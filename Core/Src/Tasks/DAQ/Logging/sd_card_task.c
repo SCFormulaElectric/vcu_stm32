@@ -1,7 +1,5 @@
 #include "Tasks/DAQ/Logging/sd_card_task.h"
 
-#include "Tasks/DAQ/Logging/sd_card_task.h"
-
 // Task: SD Card
 void sd_card_task(void *argument)
 {
