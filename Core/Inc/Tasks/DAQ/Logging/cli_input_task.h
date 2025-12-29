@@ -3,8 +3,7 @@
 
 #include "app.h"
 #include "Tasks/Task_Helper/watchdog_tasks_defs.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_gpio.h"
+#include "Peripherals/digital_pins.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>

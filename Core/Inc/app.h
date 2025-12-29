@@ -99,5 +99,4 @@ extern app_data_t app;
 void create_app();
 void __serial_print(const char *str);
 void serial_log(const char *fmt, ...);
-uint32_t find_next_log_index(void);
 #endif /* APP_H */

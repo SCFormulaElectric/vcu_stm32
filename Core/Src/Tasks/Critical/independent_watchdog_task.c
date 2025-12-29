@@ -9,13 +9,7 @@ void independent_watchdog_task(void *argument) {
     for (;;)
     {
         xEventGroupSetBits(data->idwg_group, WD_IDWG);
-        EventBits_t bits = xEventGroupWaitBits(
-            data->idwg_group,
-            WD_ALL_TASKS,
-            pdTRUE,        // clear bits after success
-            pdTRUE,        // wait for ALL bits
-            window
-        );
+        EventBits_t bits = xEventGroupWaitBits(data->idwg_group, WD_ALL_TASKS, pdTRUE, pdTRUE, window);
 
         if ((bits & WD_ALL_TASKS) == WD_ALL_TASKS)
         {

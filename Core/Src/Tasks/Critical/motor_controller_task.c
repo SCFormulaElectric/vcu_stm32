@@ -52,7 +52,7 @@ void motor_controller_task(void *argument) {
                 if(motorControl->input_faults.apps_fault != 1 || motorControl->input_faults.bpps_fault != 1)
                 {
                     //if there is no motor control fault go straight to enable
-                    if (!is_fault(motorControl->fault)) {
+                    if (!is_fault(motorControl->fault_codes)) {
                         task_state = STATE_ENABLE;
                         motorControl->lastTorqueCommand = 0;
                     }
@@ -62,7 +62,6 @@ void motor_controller_task(void *argument) {
                         task_state = STATE_WAIT;
                     }
                     //other faults
-
                 }
                 break;
 

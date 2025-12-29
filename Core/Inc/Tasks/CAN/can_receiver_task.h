@@ -3,19 +3,18 @@
 
 #include "app.h"
 #include "Tasks/Task_Helper/watchdog_tasks_defs.h"
-#include "Peripherals/can_bus.h"
 
 #define CAN_RX_DELAY_MS 20
 #define CAN_RX_STACK_SIZE 2*KILOBYTE
 
 // Motor Controller IDs
-#define MOTOR_CONTROLLER_ID_MIN 0x0A0
-#define MOTOR_CONTROLLER_ID_MAX 0x0AF
+#define MOTOR_CONTROLLER_ID_MIN 0x00A0
+#define MOTOR_CONTROLLER_ID_MAX 0x00AF
 #define IS_MOTOR_CONTROLLER_ID(id) ((id) >= MOTOR_CONTROLLER_ID_MIN && (id) <= MOTOR_CONTROLLER_ID_MAX)
 
 //Dashboard IDS
-#define DASHBOARD_ID_MIN
-#define DASHBOARD_ID_MAX
+#define DASHBOARD_ID_MIN 0x00B0
+#define DASHBOARD_ID_MAX 0x00BF
 #define IS_DASHBOARD_ID(id) ((id) >= DASHBOARD_ID_MIN && (id) <= DASHBOARD_ID_MAX)
 /*0x0A0 Slow/10 Hz Temperatures #1 0x0001
 0x0A1 Slow/10 Hz Temperatures #2 0x0002

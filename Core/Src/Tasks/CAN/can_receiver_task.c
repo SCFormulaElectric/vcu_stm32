@@ -7,7 +7,7 @@ void can_receiver_task(void *argument) {
 
     for (;;) {
         TickType_t start = xTaskGetTickCount();
-        if (xQueueReceive(queue, &msg, 0))
+        while (xQueueReceive(queue, &msg, 0) == pdTRUE)
         {
             if (IS_MOTOR_CONTROLLER_ID(msg.tx_id)) {
                 process_MC_msg(data, msg);
@@ -28,13 +28,13 @@ void process_MC_msg(app_data_t *data, can_message_rx_t message) {
         data->motorControl.temp.INV_Module_C_Temp       = ((uint16_t)msg.tx_packet[5] << 8) | msg.tx_packet[4];
         data->motorControl.temp.INV_GDB_Temp            = ((uint16_t)msg.tx_packet[7] << 8) | msg.tx_packet[6];
     }
-    elif (msg.tx_id == MC_temp2_addr) {
+    else if (msg.tx_id == MC_temp2_addr) {
         data->motorControl.temp.INV_Control_Board_Temp  = ((uint16_t)msg.tx_packet[1] << 8) | msg.tx_packet[0];
         data->motorControl.temp.INV_RTD1_Temperature    = ((uint16_t)msg.tx_packet[3] << 8) | msg.tx_packet[2];
         data->motorControl.temp.INV_RTD2_Temperature    = ((uint16_t)msg.tx_packet[5] << 8) | msg.tx_packet[4];
         data->motorControl.temp.INV_Hot_Spot_Temp_Motor = ((uint16_t)msg.tx_packet[7] << 8) | msg.tx_packet[6];
     }
-    elif (msg.tx_id == MC_temp3_addr) {
+    else if (msg.tx_id == MC_temp3_addr) {
         data->motorControl.temp.INV_Coolant_Temp        = ((uint16_t)msg.tx_packet[1] << 8) | msg.tx_packet[0];
         data->motorControl.temp.INV_Hot_Spot_Temp_Inverter = ((uint16_t)msg.tx_packet[3] << 8) | msg.tx_packet[2];
         data->motorControl.temp.INV_Motor_Temp          = ((uint16_t)msg.tx_packet[5] << 8) | msg.tx_packet[4];

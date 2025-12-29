@@ -13,12 +13,12 @@ void cli_input_task(void *argument) {
     for (;;) {
         TickType_t start = xTaskGetTickCount();
         uint8_t ch;
-        if (xQueueReceive(data->cli_queue, &ch, CLI_TICKS_TO_WAIT))
-        {
+        while(xQueueReceive(data->cli_queue, &ch, CLI_TICKS_TO_WAIT) == pdTRUE){
             if (ch == '\n' || ch == '\r') {
                 cli_buffer[index] = '\0';
                 process_cmd(data, cli_buffer);
                 index = 0;
+                break;
             } else {
                 cli_buffer[index] = ch;
                 index++;
