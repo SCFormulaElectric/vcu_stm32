@@ -110,7 +110,7 @@ task_entry_t create_sd_card_task(app_data_t *data) {
         "SD Card",
         SD_CARD_STACK_SIZE,
         data,
-        sd_card_PRIO,
+        SD_CARD_PRIO,
         &entry.handle
     );
     

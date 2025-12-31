@@ -128,7 +128,7 @@ task_entry_t create_cli_input_task(app_data_t *data) {
         "CLI Input",               // Task name (string)
         CLI_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        cli_input_PRIO,    // Priority (adjust as needed)
+        CLI_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
     

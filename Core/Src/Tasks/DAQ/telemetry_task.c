@@ -21,7 +21,7 @@ task_entry_t create_telemetry_task(app_data_t *data) {
         "Telemetry",               // Task name (string)
         TELEMETRY_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        telemetry_task_PRIO,    // Priority (adjust as needed)
+        TELEMETRY_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
     

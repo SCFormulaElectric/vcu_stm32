@@ -75,7 +75,7 @@ task_entry_t create_cooling_task(app_data_t *data) {
         "Cooling",               // Task name (string)
         COOLING_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        Cooling_PRIO,    // Priority (adjust as needed)
+        COOLING_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
     configASSERT(status == pdPASS);

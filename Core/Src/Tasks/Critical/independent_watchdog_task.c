@@ -5,11 +5,11 @@
 void independent_watchdog_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
     const TickType_t window = pdMS_TO_TICKS(IDWG_WINDOW_MS);
-
+    EventBits_t bits;
     for (;;)
     {
         xEventGroupSetBits(data->idwg_group, WD_IDWG);
-        EventBits_t bits = xEventGroupWaitBits(data->idwg_group, WD_ALL_TASKS, pdTRUE, pdTRUE, window);
+        bits = xEventGroupWaitBits(data->idwg_group, WD_ALL_TASKS, pdTRUE, pdTRUE, window);
 
         if ((bits & WD_ALL_TASKS) == WD_ALL_TASKS)
         {
