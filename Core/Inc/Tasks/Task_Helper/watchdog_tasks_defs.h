@@ -1,9 +1,5 @@
-/*
-There are two main variables defined here, one is WATCHDOG_ALL_TASK which is the for every task
-The other one is WD_{TASK_NAME} where the task_name is defined by the parameters passed into the "X" function
-ex. WD_THROTTLE would be used to kick the bit for the throttle task
-*/
-
+#ifndef WATCHDOG_DEFS_H
+#define WATCHDOG_DEFS_H
 #define WATCHDOG_TASK_LIST \
     X(THROTTLE) \
     X(BPPS) \
@@ -27,5 +23,6 @@ enum {
 #undef X
 
 #define X(name) | WD_##name
-#define WD_ALL_TASKS (0 WATCHDOG_TASK_LIST)
+#define WD_ALL_TASKS ((1U << NUM_TASKS) - 1U)
 #undef X
+#endif

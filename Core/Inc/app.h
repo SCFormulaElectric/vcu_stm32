@@ -22,12 +22,12 @@
 #define BPPS_PRIO               16
 #define APPS_PRIO               16
 #define IDWG_PRIO               16
-#define sd_card_PRIO            15
+#define SD_CARD_PRIO            15
 #define MCT_PRIO                14
 #define CAN_PRIO                12
-#define Cooling_PRIO            11
+#define COOLING_PRIO            11
 #define LC_PRIO                 10
-#define state_machine_PRIO      12
+#define SM_PRIO      12
 #define telemetry_task_PRIO     6
 #define cli_input_PRIO          4
 #define dash_PRIO               3

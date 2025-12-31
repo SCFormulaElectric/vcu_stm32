@@ -21,7 +21,7 @@ task_entry_t create_default_task_task(app_data_t *data) {
         "Default Task",               // Task name (string)
         DEFAULT_TASK_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        default_task_prio,    // Priority (adjust as needed)
+        DEFAULT_TASK_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
     configASSERT(status == pdPASS);

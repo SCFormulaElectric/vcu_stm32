@@ -21,7 +21,7 @@ task_entry_t create_dash_task(app_data_t *data) {
         "Dash",               // Task name (string)
         DASHBOARD_STACK_SIZE,                     // Stack size (words, adjust as needed)
         data,                    // Task parameters
-        dash_PRIO,    // Priority (adjust as needed)
+        DASH_PRIO,    // Priority (adjust as needed)
         &entry.handle             // Task handle
     );
     configASSERT(status == pdPASS);
