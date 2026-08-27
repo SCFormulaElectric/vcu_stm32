@@ -8,7 +8,7 @@
 void telemetry_task(void *argument);
 
 
-task_entry_t create_telemetry_task(void);
+task_entry_t create_telemetry_task(app_data_t *data);
 
 #endif /* TELEMETRY_TASK_H */
 

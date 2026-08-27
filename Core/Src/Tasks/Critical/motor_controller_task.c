@@ -7,16 +7,19 @@ void motor_controller_task(void *argument) {
     MotorControl_t *motorControl = &data->motorControl;
 
     state_t task_state = STATE_DISABLE;
-    uint8_t disabled_sent = 1;
+    TickType_t last_command_tick = 0;
     
     motorControl->lastTorqueCommand = 0;
+    motorControl->torqueCommand = 0;
     const can_tx_message_t free_roll_can_msg = create_motor_controller_command(0, 0, 0, 0, 0, 0, 0);
-    const can_tx_message_t clear_fault_can_msg = create_motor_controller_rw_command(20, 1, 0);
     
     for (;;) {
         TickType_t start = xTaskGetTickCount();
         // Check we are in the correct car state first
         if (data->car_state != CAR_ENABLE){
+            (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
+            motorControl->lastTorqueCommand = 0;
+            motorControl->torqueCommand = 0;
             xEventGroupSetBits(data->idwg_group, WD_MOTOR_CONTROLLER);
             vTaskDelayUntil(&start, pdMS_TO_TICKS(motor_control_interval));
             continue;
@@ -24,43 +27,46 @@ void motor_controller_task(void *argument) {
         switch(task_state) {
             case STATE_ENABLE:
                 uint16_t throttle = data->throttle_level;  
-                if (motorControl->input_faults.apps_fault == 1 || motorControl->input_faults.bpps_fault == 1 || is_fault(motorControl->fault)) {
+                if (motorControl->input_faults.apps_fault != 0U || motorControl->input_faults.bpps_fault != 0U || is_fault(&motorControl->fault_codes)) {
                         (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
                         motorControl->lastTorqueCommand = 0;
+                        motorControl->torqueCommand = 0;
                         task_state = STATE_DISABLE;
                         break;
                 }
                 if (throttle < THROTTLE_DEADZONE) {
                     (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
                     motorControl->lastTorqueCommand = 0;
+                    motorControl->torqueCommand = 0;
                 }
                 else {
-                    uint16_t torque_x10 = (uint16_t)((throttle * MAX_TORQUE * 10) / 1000);
+                    const uint16_t shaped_throttle = pedal_response_apply(
+                        &data->pedal_response, throttle);
+                    uint16_t torque_x10 = (uint16_t)((shaped_throttle * MAX_TORQUE * 10) / 1000);
+                    motorControl->torqueCommand = torque_x10;
                     // @todo @note Check if the cascadia motor controller needs constant torque commands.
-                    if (torque_x10 == motorControl->lastTorqueCommand) {
+                    if (torque_x10 == motorControl->lastTorqueCommand &&
+                        (xTaskGetTickCount() - last_command_tick) < pdMS_TO_TICKS(100)) {
                         break;
                     }
                     can_tx_message_t torque_cmd = create_motor_controller_command(torque_x10, 0, 1, 1, 0, 0, 0);
                     if (xQueueSend(data->can_bus.can_tx_queue, &torque_cmd, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS)) == pdPASS) {
                         motorControl->lastTorqueCommand = torque_x10;
+                        last_command_tick = xTaskGetTickCount();
                     }
                 }
                 break;
 
             case STATE_DISABLE: 
                 //checks that there is no longer a throttle or plausibility error
-                if(motorControl->input_faults.apps_fault != 1 || motorControl->input_faults.bpps_fault != 1)
+                if(motorControl->input_faults.apps_fault == 0U && motorControl->input_faults.bpps_fault == 0U)
                 {
                     //if there is no motor control fault go straight to enable
-                    if (!is_fault(motorControl->fault_codes)) {
+                    if (!is_fault(&motorControl->fault_codes)) {
                         task_state = STATE_ENABLE;
                         motorControl->lastTorqueCommand = 0;
                     }
                     //if there is a motor control fault that can be cleared clear it
-                    else if(motorControl->fault == CAN_Command_Message_Lost_Fault) {
-                        (void)xQueueSend(data->can_bus.can_tx_queue, &clear_fault_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
-                        task_state = STATE_WAIT;
-                    }
                     //other faults
                 }
                 break;
@@ -68,14 +74,15 @@ void motor_controller_task(void *argument) {
             case STATE_WAIT:
                 //checks return message
                 if(motorControl->param_response.Write_Success == 1) {
-                    motorControl->param_response = {0};
+                    motorControl->param_response = (parameter_response_t){0};
                     task_state = STATE_ENABLE;
                 }
                 else {
                     task_state = STATE_DISABLE;
                 }
-                (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
-                break;
+                    (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
+                    motorControl->torqueCommand = 0;
+                    break;
 
             }
             xEventGroupSetBits(data->idwg_group, WD_MOTOR_CONTROLLER);

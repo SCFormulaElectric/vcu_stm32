@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="455" viewBox="0 0 760 455" role="img" aria-labelledby="title desc">
+  <title id="title">VCU pedal response modes</title>
+  <desc id="desc">Comparison of linear, early, balanced, and progressive pedal response at 65 percent curve strength. The early curve requests more torque at low pedal and tapers toward full pedal.</desc>
+  <rect width="760" height="430" fill="#ffffff"/>
+  <text x="380" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="600" fill="#111827">Pedal response modes at 65% strength</text>
+
+  <g stroke="#d1d5db" stroke-width="1">
+    <line x1="78" y1="350" x2="710" y2="350"/>
+    <line x1="78" y1="288" x2="710" y2="288"/>
+    <line x1="78" y1="226" x2="710" y2="226"/>
+    <line x1="78" y1="164" x2="710" y2="164"/>
+    <line x1="78" y1="102" x2="710" y2="102"/>
+    <line x1="78" y1="40" x2="710" y2="40"/>
+    <line x1="78" y1="40" x2="78" y2="350"/>
+    <line x1="204" y1="40" x2="204" y2="350"/>
+    <line x1="330" y1="40" x2="330" y2="350"/>
+    <line x1="457" y1="40" x2="457" y2="350"/>
+    <line x1="583" y1="40" x2="583" y2="350"/>
+    <line x1="710" y1="40" x2="710" y2="350"/>
+  </g>
+
+  <g stroke="#111827" stroke-width="2">
+    <line x1="78" y1="350" x2="710" y2="350"/>
+    <line x1="78" y1="40" x2="78" y2="350"/>
+  </g>
+
+  <g font-family="Arial, sans-serif" font-size="12" fill="#374151">
+    <text x="78" y="370" text-anchor="middle">0</text>
+    <text x="204" y="370" text-anchor="middle">20</text>
+    <text x="330" y="370" text-anchor="middle">40</text>
+    <text x="457" y="370" text-anchor="middle">60</text>
+    <text x="583" y="370" text-anchor="middle">80</text>
+    <text x="710" y="370" text-anchor="middle">100</text>
+    <text x="66" y="354" text-anchor="end">0</text>
+    <text x="66" y="292" text-anchor="end">20</text>
+    <text x="66" y="230" text-anchor="end">40</text>
+    <text x="66" y="168" text-anchor="end">60</text>
+    <text x="66" y="106" text-anchor="end">80</text>
+    <text x="66" y="44" text-anchor="end">100</text>
+    <text x="394" y="440" text-anchor="middle" font-size="14" font-weight="600">Pedal input (%)</text>
+    <text x="18" y="195" text-anchor="middle" font-size="14" font-weight="600" transform="rotate(-90 18 195)">Torque request (%)</text>
+  </g>
+
+  <path d="M78 350 L141 319 L204 288 L267 257 L330 226 L394 195 L457 164 L520 133 L583 102 L647 71 L710 40" fill="none" stroke="#6b7280" stroke-width="3"/>
+  <path d="M78 350 L141 291 L204 242 L267 200 L330 165 L394 137 L457 112 L520 90 L583 72 L647 52 L710 40" fill="none" stroke="#c2410c" stroke-width="3"/>
+  <path d="M78 350 L141 327 L204 298 L267 265 L330 228 L394 191 L457 154 L520 119 L583 88 L647 61 L710 40" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <path d="M78 350 L141 333 L204 310 L267 283 L330 250 L394 215 L457 178 L520 141 L583 106 L647 71 L710 40" fill="none" stroke="#15803d" stroke-width="3"/>
+
+  <g font-family="Arial, sans-serif" font-size="12" fill="#111827">
+    <line x1="90" y1="394" x2="118" y2="394" stroke="#6b7280" stroke-width="3"/>
+    <text x="126" y="398">Linear</text>
+    <line x1="260" y1="394" x2="288" y2="394" stroke="#c2410c" stroke-width="3"/>
+    <text x="296" y="398">Early</text>
+    <line x1="430" y1="394" x2="458" y2="394" stroke="#2563eb" stroke-width="3"/>
+    <text x="466" y="398">Balanced</text>
+    <line x1="600" y1="394" x2="628" y2="394" stroke="#15803d" stroke-width="3"/>
+    <text x="636" y="398">Progressive</text>
+  </g>
+</svg>

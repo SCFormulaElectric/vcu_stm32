@@ -9,7 +9,7 @@
 void default_task_task(void *argument);
 
 
-task_entry_t create_default_task_task(void);
+task_entry_t create_default_task_task(app_data_t *data);
 
 #endif /* DEFAULT_TASK_TASK_H */
 

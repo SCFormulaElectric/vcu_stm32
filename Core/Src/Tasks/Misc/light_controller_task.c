@@ -17,21 +17,11 @@ void light_controller_task(void *argument) {
             HAL_GPIO_WritePin(GPIOA, BRAKE_LIGHT_PIN, GPIO_PIN_RESET);
         }
 
-        if (tsms != GPIO_PIN_SET) {
-            serial_log("TSMS FAULTED!");
-            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_SET);
-        }
-        else {
-            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_RESET);
-        }
-
-        if (bms != GPIO_PIN_SET) {
-            serial_log("BMS FAULTED!");
-            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_SET);
-        }
-        else {
-            HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_RESET);
-        }
+        const uint8_t safety_fault = (tsms != GPIO_PIN_SET) || (bms != GPIO_PIN_SET) ||
+            (data->motorControl.input_faults.apps_fault != 0U) ||
+            (data->motorControl.input_faults.bpps_fault != 0U);
+        HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN,
+            safety_fault ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
         xEventGroupSetBits(data->idwg_group, WD_LIGHT_CONTROLLER);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(LIGHT_CONTROLLER_DELAY_MS));

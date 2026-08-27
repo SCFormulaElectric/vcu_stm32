@@ -59,6 +59,8 @@ extern SD_HandleTypeDef hsd;
 extern SPI_HandleTypeDef hspi1;
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim6;
+extern DMA_HandleTypeDef hdma_adc1;
+extern CAN_HandleTypeDef hcan1;
 
 /* USER CODE BEGIN EV */
 
@@ -216,6 +218,21 @@ void OTG_FS_IRQHandler(void)
   /* USER CODE BEGIN OTG_FS_IRQn 1 */
 
   /* USER CODE END OTG_FS_IRQn 1 */
+}
+
+void DMA2_Stream0_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(&hdma_adc1);
+}
+
+void CAN1_RX0_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan1);
+}
+
+void CAN1_SCE_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan1);
 }
 
 /* USER CODE BEGIN 1 */

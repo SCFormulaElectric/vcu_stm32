@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
+#include "app.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -47,6 +48,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 CAN_HandleTypeDef hcan1;
 
@@ -120,15 +122,33 @@ int main(void)
   MX_GPIO_Init();
   MX_ADC1_Init();
   MX_CAN1_Init();
-  MX_IWDG_Init();
+  CAN_FilterTypeDef can_filter = {0};
+  can_filter.FilterBank = 0;
+  can_filter.FilterMode = CAN_FILTERMODE_IDMASK;
+  can_filter.FilterScale = CAN_FILTERSCALE_32BIT;
+  can_filter.FilterIdHigh = 0;
+  can_filter.FilterIdLow = 0;
+  can_filter.FilterMaskIdHigh = 0;
+  can_filter.FilterMaskIdLow = 0;
+  can_filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+  can_filter.FilterActivation = ENABLE;
+  can_filter.SlaveStartFilterBank = 14;
+  if (HAL_CAN_ConfigFilter(&hcan1, &can_filter) != HAL_OK ||
+      HAL_CAN_Start(&hcan1) != HAL_OK ||
+      HAL_CAN_ActivateNotification(&hcan1,
+          CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_ERROR | CAN_IT_BUSOFF) != HAL_OK)
+  {
+    Error_Handler();
+  }
   MX_SPI1_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start_DMA(&hadc1,
-                        (uint32_t*)adc_buffer,
-                        ADC_CHANNEL_COUNT);
+  if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, ADC_CHANNEL_COUNT) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -151,11 +171,12 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
   /* USER CODE BEGIN RTOS_THREADS */
   create_app();
+  if (app.startup_mode == START_ALL)
+  {
+    MX_IWDG_Init();
+  }
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -203,9 +224,10 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 16;
-  RCC_OscInitStruct.PLL.PLLN = 192;
+  /* HSI 16 MHz / 16 * 336 / 2 = 168 MHz SYSCLK; PLLQ keeps USB at 48 MHz. */
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -215,12 +237,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -247,17 +269,18 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  /* PCLK2 is 84 MHz; /4 keeps the ADC clock within the F407 limit. */
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.NbrOfConversion = ADC_CHANNEL_COUNT;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -265,12 +288,19 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  sConfig.SamplingTime = ADC_SAMPLETIME_84CYCLES;
+  const uint32_t adc_channels[ADC_CHANNEL_COUNT] = {
+    ADC_CHANNEL_10, ADC_CHANNEL_11, ADC_CHANNEL_12,
+    ADC_CHANNEL_13, ADC_CHANNEL_14, ADC_CHANNEL_15
+  };
+  for (uint32_t rank = 0; rank < ADC_CHANNEL_COUNT; rank++)
   {
-    Error_Handler();
+    sConfig.Channel = adc_channels[rank];
+    sConfig.Rank = rank + 1U;
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+      Error_Handler();
+    }
   }
   /* USER CODE BEGIN ADC1_Init 2 */
 
@@ -294,15 +324,16 @@ static void MX_CAN1_Init(void)
  
   /* USER CODE END CAN1_Init 1 */
   hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 16;
+  /* 42 MHz PCLK1 / (6 * (1 + 11 + 2)) = 500 kbit/s. */
+  hcan1.Init.Prescaler = 6;
   hcan1.Init.Mode = CAN_MODE_NORMAL;
   hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_1TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan1.Init.TimeSeg1 = CAN_BS1_11TQ;
+  hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
   hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoBusOff = ENABLE;
   hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.AutoRetransmission = ENABLE;
   hcan1.Init.ReceiveFifoLocked = DISABLE;
   hcan1.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan1) != HAL_OK)
@@ -331,7 +362,8 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  /* Nominally about 8.2 s at a 32 kHz LSI; the supervisor window is 3 s. */
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_64;
   hiwdg.Init.Reload = 4095;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
@@ -393,7 +425,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
@@ -463,6 +495,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  HAL_GPIO_WritePin(GPIOA, BRAKE_LIGHT_PIN, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_SET);
+
+  GPIO_InitStruct.Pin = BRAKE_LIGHT_PIN | HOOP_LIGHT_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;
@@ -488,40 +530,6 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
-/* USER CODE BEGIN 4 */
-static void MX_CAN1_Init(void)
-{
- 
-  /* USER CODE BEGIN CAN1_Init 0 */
- 
-  /* USER CODE END CAN1_Init 0 */
- 
-  /* USER CODE BEGIN CAN1_Init 1 */
- 
-  /* USER CODE END CAN1_Init 1 */
-  hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 16;
-  hcan1.Init.Mode = CAN_MODE_NORMAL;
-  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_1TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_1TQ;
-  hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = DISABLE;
-  hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
-  hcan1.Init.ReceiveFifoLocked = DISABLE;
-  hcan1.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN CAN1_Init 2 */
- 
-  /* USER CODE END CAN1_Init 2 */
- 
-}
-/* USER CODE END 4 */
-
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
   * @brief  Function implementing the defaultTask thread.
@@ -531,6 +539,7 @@ static void MX_CAN1_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  (void)argument;
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)

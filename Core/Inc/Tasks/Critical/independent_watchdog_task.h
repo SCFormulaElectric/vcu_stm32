@@ -7,7 +7,7 @@
 #define IDWG_WINDOW_MS 3000
 #define IDWG_STACK_SIZE KILOBYTE
 void independent_watchdog_task(void *argument);
-task_entry_t create_independent_watchdog_task(void);
+task_entry_t create_independent_watchdog_task(app_data_t *data);
 
 #endif /* INDEPENDENT_WATCHDOG_TASK_H */
 

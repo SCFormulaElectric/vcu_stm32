@@ -34,7 +34,7 @@
 #define DEFAULT_TASK_PRIO       1
 
 // Helper defines for app.c
-#define CLI_QUEUE_LENGTH        10
+#define CLI_QUEUE_LENGTH        128
 #define CLI_ITEM_SIZE           sizeof(char)
 
 #define CAN_QUEUE_LENGTH        10
@@ -45,8 +45,11 @@
 #define LOG_QUEUE_LENGTH        64
 #define LOG_MSG_SIZE            sizeof(log_msg_t)
 
+#define VCU_FIRMWARE_VERSION    "inspection-baseline"
+#define VCU_TARGET_MCU          "STM32F407VET6"
+
 // Helper function for all tasks!
-#define ADC_TO_VOLTS(x) ((x) / 818.0f)
+#define ADC_TO_VOLTS(x) (((float)(x) * 3.3f) / 4095.0f)
 
 // Stack sizes
 #define KILOBYTE 256
@@ -73,6 +76,31 @@ typedef enum {
     CAR_ENABLE
 } car_state_t;
 
+typedef enum {
+    SAFETY_FAULT_NONE       = 0U,
+    SAFETY_FAULT_TSMS       = (1U << 0),
+    SAFETY_FAULT_BMS        = (1U << 1),
+    SAFETY_FAULT_APPS       = (1U << 2),
+    SAFETY_FAULT_BPPS       = (1U << 3),
+    SAFETY_FAULT_INVERTER   = (1U << 4),
+    SAFETY_FAULT_CAN        = (1U << 5),
+    SAFETY_FAULT_ADC        = (1U << 6),
+    SAFETY_FAULT_RTD        = (1U << 7)
+} safety_fault_t;
+
+typedef enum {
+    PEDAL_RESPONSE_LINEAR = 0,
+    PEDAL_RESPONSE_EARLY,
+    PEDAL_RESPONSE_BALANCED,
+    PEDAL_RESPONSE_PROGRESSIVE
+} pedal_response_mode_t;
+
+typedef struct {
+    volatile pedal_response_mode_t mode;
+    /* 0 = linear, 1000 = full selected curve. */
+    volatile uint16_t strength;
+} pedal_response_config_t;
+
 typedef struct {
     const char *name;
     TaskHandle_t handle;
@@ -91,6 +119,10 @@ typedef struct app_data_s {
 	volatile car_state_t    car_state;
 	volatile uint16_t       throttle_level;
 	volatile uint16_t       brake_level;
+    pedal_response_config_t pedal_response;
+    volatile uint32_t      safety_faults;
+    volatile uint8_t       ready_to_drive;
+    volatile uint8_t       rtd_sound_active;
     EventGroupHandle_t      idwg_group;
     sd_card_t               sd_card;
 } app_data_t;

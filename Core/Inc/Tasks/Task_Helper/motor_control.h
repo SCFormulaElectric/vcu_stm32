@@ -1,44 +1,14 @@
 #ifndef motor_control
 #define motor_control
 #include <stdint.h>
+#include "Peripherals/can_bus.h"
 
-#define CAN_Command_Message_Lost_Fault 0x00000800;
+#define CAN_Command_Message_Lost_Fault 0x00000800U
 
 typedef struct {
     uint8_t apps_fault;
     uint8_t bpps_fault;
 } external_motor_fault_t;
-
-typedef struct {
-    volatile uint16_t torqueCommand;
-    volatile uint16_t lastTorqueCommand;
-    volatile uint16_t voltage;
-    volatile uint16_t motor_speed;
-    volatile uint16_t actual_torque;
-    volatile uint16_t inverter_state;
-	volatile external_motor_fault_t input_faults;
-
-	//Motor Control CAN Broadcast Messages
-	MC_temp_t temp;
-	analog_input_voltage_t analog_inputs;
-	digital_input_status_t digital_inputs;
-	motor_position_information_t position_info;
-	current_information_t current_info;
-	voltage_information_t voltage_info;
-	flux_information_t flux_info;
-	internal_voltages_t internal_voltages;
-	internal_states_t internal_states;
-	volatile fault_codes_t fault_codes;
-	torque_timer_info_t torque_timer_info;
-	modulation_flux_info_t modulation_flux_info;
-	firmware_info_t firmware_info;
-	diagnostic_data_t diagnostic_data;
-	high_speed_msg_t high_speed_msg;
-	torque_capability_t torque_capability;
-
-	//Parameter Response
-	volatile parameter_response_t param_response;
-} MotorControl_t;
 
 //0x0A0-0x0A2
 typedef struct {
@@ -88,6 +58,7 @@ typedef struct {
 	uint16_t INV_Motor_Speed; // Angular Velocity The measured speed of the motor.
 	uint16_t INV_Electrical_Output_Frequency; // Frequency The actual electrical frequency of the inverter.
 	uint16_t INV_Delta_Resolver_Filtered // Angle This is used in calibration of resolver angle adjustment. The range of this parameter is ±180°. Values between 180° and 360° are shown as negative angle. For example, 270° is equal to -90°, and 190° is equal to -170°
+;
 } motor_position_information_t;
 
 //0x0A6
@@ -256,5 +227,34 @@ typedef struct {
 	uint16_t Data;
 } parameter_response_t;
 
-uint8_t is_fault(const fault_codes_t *faults);
+typedef struct {
+    volatile uint16_t torqueCommand;
+    volatile uint16_t lastTorqueCommand;
+    volatile uint16_t voltage;
+    volatile uint16_t motor_speed;
+    volatile uint16_t actual_torque;
+    volatile uint16_t inverter_state;
+    volatile external_motor_fault_t input_faults;
+    volatile uint32_t fault_codes_last_tick;
+    volatile uint8_t fault_codes_valid;
+    MC_temp_t temp;
+    analog_input_voltage_t analog_inputs;
+    digital_input_status_t digital_inputs;
+    motor_position_information_t position_info;
+    current_information_t current_info;
+    voltage_information_t voltage_info;
+    flux_information_t flux_info;
+    internal_voltages_t internal_voltages;
+    internal_states_t internal_states;
+    volatile fault_codes_t fault_codes;
+    torque_timer_info_t torque_timer_info;
+    modulation_flux_info_t modulation_flux_info;
+    firmware_info_t firmware_info;
+    diagnostic_data_t diagnostic_data;
+    high_speed_msg_t high_speed_msg;
+    torque_capability_t torque_capability;
+    volatile parameter_response_t param_response;
+} MotorControl_t;
+
+uint8_t is_fault(const volatile fault_codes_t *faults);
 #endif

@@ -8,7 +8,7 @@
 void dash_task(void *argument);
 
 
-task_entry_t create_dash_task(void);
+task_entry_t create_dash_task(app_data_t *data);
 
 #endif /* DASH_TASK_H */
 

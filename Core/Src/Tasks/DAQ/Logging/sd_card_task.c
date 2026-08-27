@@ -63,7 +63,6 @@ void sd_card_task(void *argument)
                 FRESULT res = f_open(&data->sd_card.file, filename, FA_WRITE | FA_OPEN_APPEND);
                 configASSERT(res == FR_OK);
                 data->sd_card.file_opened = 1;
-                strncpy(data->sd_card.filename, filename, sizeof(data->sd_card.filename));
             }
 
             while (xQueueReceive(data->sd_card.sd_card_q, q_buffer, 0) == pdTRUE)

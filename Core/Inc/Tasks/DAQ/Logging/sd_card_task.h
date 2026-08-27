@@ -17,7 +17,7 @@ void sd_card_task(void *argument);
 
 
 uint32_t find_next_log_index(void);
-task_entry_t create_sd_card_task(void);
+task_entry_t create_sd_card_task(app_data_t *data);
 
 #endif /* SD_CARD_TASK_H */
 

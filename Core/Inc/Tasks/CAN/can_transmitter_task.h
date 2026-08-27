@@ -11,7 +11,7 @@
 void can_transmitter_task(void *argument);
 
 
-task_entry_t create_can_transmitter_task(void);
+task_entry_t create_can_transmitter_task(app_data_t *data);
 
 #endif /* can_transmitter_TASK_H */
 

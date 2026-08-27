@@ -1,23 +1,39 @@
 #include "Tasks/Critical/brake_pedal_plausibility_check_task.h"
 
+static uint16_t brake_map_to_percentage(uint16_t input, uint16_t min_val, uint16_t max_val);
+
 void brake_pedal_plausibility_check_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
+    TickType_t overlap_start = 0;
     
     for (;;) {
         TickType_t start = xTaskGetTickCount();
         uint16_t input_1 = adc_buffer[BRAKE_PIN1];
         uint16_t input_2 = adc_buffer[BRAKE_PIN2];
-        uint16_t brake_1 = map_to_percentage(input_1, BRAKE_PIN1_MIN, BRAKE_PIN1_MAX); 
-        uint16_t brake_2 = map_to_percentage(input_2, BRAKE_PIN2_MIN, BRAKE_PIN2_MAX);
+        uint16_t brake_1 = brake_map_to_percentage(input_1, BRAKE_PIN1_MIN, BRAKE_PIN1_MAX);
+        uint16_t brake_2 = brake_map_to_percentage(input_2, BRAKE_PIN2_MIN, BRAKE_PIN2_MAX);
         
         uint16_t throttle_level = data->throttle_level;
         uint16_t brake_level = (brake_1 + brake_2) / 2; 
         data->brake_level = brake_level;
 
-        if (throttle_level > BPPS_THROTTLE_ENABLED && brake_level > BPPS_BRAKE_TRESH) {
+        const uint8_t brake_inputs_valid =
+            (input_1 >= BRAKE_PIN1_MIN && input_1 <= BRAKE_PIN1_MAX &&
+             input_2 >= BRAKE_PIN2_MIN && input_2 <= BRAKE_PIN2_MAX);
+
+        if (!brake_inputs_valid) {
             data->motorControl.input_faults.bpps_fault = 1;
+            overlap_start = 0;
+        } else if (throttle_level > BPPS_THROTTLE_ENABLED && brake_level > BPPS_BRAKE_TRESH) {
+            if (overlap_start == 0) {
+                overlap_start = start;
+            }
+            if ((start - overlap_start) >= pdMS_TO_TICKS(1000)) {
+                data->motorControl.input_faults.bpps_fault = 1;
+            }
         } else if (throttle_level < BPPS_THROTTLE_DISABLED) {
             data->motorControl.input_faults.bpps_fault = 0;
+            overlap_start = 0;
         }     
         xEventGroupSetBits(data->idwg_group, WD_BPPS);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(BPPS_DELAY_MS));
@@ -42,13 +58,16 @@ task_entry_t create_brake_pedal_plausibility_check_task(app_data_t *data) {
     return entry;
 }
 
-uint16_t map_to_percentage(uint16_t input, uint16_t min_val, uint16_t max_val) {
+static uint16_t brake_map_to_percentage(uint16_t input, uint16_t min_val, uint16_t max_val) {
     // invalid case
     if (min_val >= max_val) {
         return 0;
     }
     if (input < min_val) {
         return 0;
+    }
+    if (input >= max_val) {
+        return 1000;
     }
     return (uint16_t)(((uint32_t)(input - min_val) * 1000) / (max_val - min_val));
 }

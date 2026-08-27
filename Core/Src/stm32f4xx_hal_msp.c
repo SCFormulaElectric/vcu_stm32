@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+extern DMA_HandleTypeDef hdma_adc1;
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -96,14 +97,34 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     /* Peripheral clock enable */
     __HAL_RCC_ADC1_CLK_ENABLE();
 
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
     /**ADC1 GPIO Configuration
-    PA0-WKUP     ------> ADC1_IN0
+    PC0..PC5     ------> ADC1_IN10..IN15
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 |
+                          GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    __HAL_RCC_DMA2_CLK_ENABLE();
+    hdma_adc1.Instance = DMA2_Stream0;
+    hdma_adc1.Init.Channel = DMA_CHANNEL_0;
+    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc1.Init.Mode = DMA_CIRCULAR;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;
+    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    __HAL_LINKDMA(hadc, DMA_Handle, hdma_adc1);
+    HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
     /* USER CODE BEGIN ADC1_MspInit 1 */
 
@@ -132,7 +153,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     /**ADC1 GPIO Configuration
     PA0-WKUP     ------> ADC1_IN0
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0);
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 |
+                    GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
+    HAL_DMA_DeInit(hadc->DMA_Handle);
 
     /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
@@ -170,6 +193,11 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
     GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+    HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
+
     /* USER CODE BEGIN CAN1_MspInit 1 */
 
     /* USER CODE END CAN1_MspInit 1 */
@@ -199,6 +227,8 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* hcan)
     PD1     ------> CAN1_TX
     */
     HAL_GPIO_DeInit(GPIOD, GPIO_PIN_0|GPIO_PIN_1);
+    HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+    HAL_NVIC_DisableIRQ(CAN1_SCE_IRQn);
 
     /* USER CODE BEGIN CAN1_MspDeInit 1 */
 
@@ -314,7 +344,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     PA6     ------> SPI1_MISO
     PA7     ------> SPI1_MOSI
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -354,7 +384,7 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
     PA6     ------> SPI1_MISO
     PA7     ------> SPI1_MOSI
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7);
 
     /* SPI1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(SPI1_IRQn);

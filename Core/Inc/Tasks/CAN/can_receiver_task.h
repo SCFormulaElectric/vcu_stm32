@@ -9,12 +9,12 @@
 
 // Motor Controller IDs
 #define MOTOR_CONTROLLER_ID_MIN 0x00A0
-#define MOTOR_CONTROLLER_ID_MAX 0x00AF
+#define MOTOR_CONTROLLER_ID_MAX 0x00BF
 #define IS_MOTOR_CONTROLLER_ID(id) ((id) >= MOTOR_CONTROLLER_ID_MIN && (id) <= MOTOR_CONTROLLER_ID_MAX)
 
-//Dashboard IDS
-#define DASHBOARD_ID_MIN 0x00B0
-#define DASHBOARD_ID_MAX 0x00BF
+/* Dashboard IDs must not overlap the Cascadia broadcast range. */
+#define DASHBOARD_ID_MIN 0x0180
+#define DASHBOARD_ID_MAX 0x018F
 #define IS_DASHBOARD_ID(id) ((id) >= DASHBOARD_ID_MIN && (id) <= DASHBOARD_ID_MAX)
 /*0x0A0 Slow/10 Hz Temperatures #1 0x0001
 0x0A1 Slow/10 Hz Temperatures #2 0x0002
@@ -39,7 +39,7 @@ void can_receiver_task(void *argument);
 void process_MC_msg(app_data_t *data, can_rx_message_t message);
 void process_Dashboard_msg(app_data_t *data, can_rx_message_t message);
 
-task_entry_t create_can_receiver_task(void);
+task_entry_t create_can_receiver_task(app_data_t *data);
 
 #endif /* CAN_RECEIVER_TASK_H */
 

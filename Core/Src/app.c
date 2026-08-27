@@ -33,6 +33,8 @@ void create_app(){
     app.car_state = CAR_IDLE;
     app.throttle_level = 0;
     app.brake_level = 0;
+    app.pedal_response.mode = PEDAL_RESPONSE_DEFAULT_MODE;
+    app.pedal_response.strength = PEDAL_RESPONSE_DEFAULT_STRENGTH;
     app.motorControl = (MotorControl_t){0};
     
     // CAN BUS STUFF
@@ -72,25 +74,28 @@ void create_app(){
     app.sd_card = sd_card;
 
 
-    app.task_entries = entries;
-    configASSERT((app.task_entries[throttle_task_index] = create_throttle_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[brake_pedal_plausibility_check_task_index] = create_brake_pedal_plausibility_check_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[can_receiver_task_index] = create_can_receiver_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[can_transmitter_task_index] = create_can_transmitter_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[cli_input_task_index] = create_cli_input_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[cooling_task_index] = create_cooling_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[dash_task_index] = create_dash_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[default_task_task_index] = create_default_task_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[independent_watchdog_task_index] = create_independent_watchdog_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[light_controller_task_index] = create_light_controller_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[motor_controller_task_index] = create_motor_controller_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[sd_card_task_index] = create_sd_card_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[state_machine_task_index] = create_state_machine_task(&app).handle) != NULL);
-    configASSERT((app.task_entries[telemetry_task_index] = create_telemetry_task(&app).handle) != NULL);
+    (void)entries;
+    app.task_entries[throttle_task_index] = create_throttle_task(&app);
+    app.task_entries[brake_pedal_plausibility_check_task_index] = create_brake_pedal_plausibility_check_task(&app);
+    app.task_entries[can_receiver_task_index] = create_can_receiver_task(&app);
+    app.task_entries[can_transmitter_task_index] = create_can_transmitter_task(&app);
+    app.task_entries[cli_input_task_index] = create_cli_input_task(&app);
+    app.task_entries[cooling_task_index] = create_cooling_task(&app);
+    app.task_entries[dash_task_index] = create_dash_task(&app);
+    app.task_entries[default_task_task_index] = create_default_task_task(&app);
+    app.task_entries[independent_watchdog_task_index] = create_independent_watchdog_task(&app);
+    app.task_entries[light_controller_task_index] = create_light_controller_task(&app);
+    app.task_entries[motor_controller_task_index] = create_motor_controller_task(&app);
+    app.task_entries[sd_card_task_index] = create_sd_card_task(&app);
+    app.task_entries[state_machine_task_index] = create_state_machine_task(&app);
+    app.task_entries[telemetry_task_index] = create_telemetry_task(&app);
+    for (size_t i = 0; i < NUM_TASKS; i++) {
+        configASSERT(app.task_entries[i].handle != NULL);
+    }
     if(app.startup_mode == START_ALL || app.startup_mode == START_NO_IDWG) {
         for (size_t i = 0; i < NUM_TASKS; i++) {
             TaskHandle_t handle = app.task_entries[i].handle;
-            if (handle != NULL && app.task_entries[i].name != "idwg") {
+            if (handle != NULL && strcmp(app.task_entries[i].name, "idwg") != 0) {
                 vTaskResume(handle);
             }
         }

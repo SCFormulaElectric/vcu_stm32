@@ -10,6 +10,9 @@ typedef struct {
     CAN_HandleTypeDef *hcan;
 	QueueHandle_t can_tx_queue;
 	QueueHandle_t can_rx_queue;
+    volatile uint32_t rx_dropped;
+    volatile uint32_t tx_errors;
+    volatile uint32_t bus_off_count;
 } can_bus_t;
 
 typedef struct {
@@ -25,5 +28,4 @@ typedef struct {
     uint8_t  is_extended;
 } can_rx_message_t;
 
-extern app_data_t app; 
 #endif

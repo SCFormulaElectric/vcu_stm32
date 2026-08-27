@@ -24,11 +24,13 @@ typedef enum {
 
 
 void motor_controller_task(void *argument);
-can_tx_message_t create_motor_controller_command(uint16_t torque, uint16_t speed, uint16_t torque_limit, 
-    uint8_t direction, uint8_t inverter_en, uint8_t inverter_discharge, uint8_t speed_mode_enable);
+can_tx_message_t create_motor_controller_command(uint16_t torque, uint16_t speed,
+    uint8_t direction, uint8_t inverter_en, uint8_t inverter_discharge,
+    uint8_t speed_mode_enable, uint16_t torque_limit);
+can_tx_message_t create_motor_controller_rw_command(uint16_t param_addr, uint8_t rw, uint16_t data);
 
 
-task_entry_t create_motor_controller_task(void);
+task_entry_t create_motor_controller_task(app_data_t *data);
 
 #endif /* MOTOR_CONTROLLER_TASK_H */
 

@@ -19,6 +19,7 @@ thermistorTempLookup[] = {
 };
 
 void cooling_task(void *argument) {
+    app_data_t *data = (app_data_t *) argument;
     for (;;) {
         TickType_t start = xTaskGetTickCount();
         uint16_t reading1 = adc_buffer[THERMISTOR_PIN1];

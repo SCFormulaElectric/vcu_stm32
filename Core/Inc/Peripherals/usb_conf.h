@@ -24,4 +24,9 @@ typedef struct {
 
 extern volatile sd_card_owner_t sd_card_owner;
 
+/* Implemented by the generated USB CDC class when enabled. The weak fallback
+ * keeps the VCU safe and linkable on builds without the USB middleware. */
+uint8_t CDC_Transmit_FS(uint8_t *buffer, uint16_t length);
+void VCU_USB_CDC_Receive(uint8_t *buffer, uint32_t length);
+
 #endif
