@@ -1,0 +1,3 @@
+[submodule "tools/vcu-console"]
+	path = tools/vcu-console
+	url = https://github.com/SCFormulaElectric/vcu-console.git
