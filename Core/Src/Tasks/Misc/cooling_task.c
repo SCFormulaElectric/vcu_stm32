@@ -22,25 +22,28 @@ void cooling_task(void *argument) {
     app_data_t *data = (app_data_t *) argument;
     for (;;) {
         TickType_t start = xTaskGetTickCount();
-        uint16_t reading1 = adc_buffer[THERMISTOR_PIN1];
-        uint16_t reading2 = adc_buffer[THERMISTOR_PIN2];
-        
-        float convertedVoltage = ADC_TO_VOLTS(reading1);
-        float before_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltage);
-        float temp_before_Radiator = thermistorToCelsius(before_radiator_resistance);
-        
-        float convertedVoltageAfter = ADC_TO_VOLTS(reading2);
-        float after_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltageAfter);
-        float temp_after_Radiator = thermistorToCelsius(after_radiator_resistance);
-        
-        // printing shenangins because no floating points
-        // Convert to integer representation (one decimal place)
-        int temp_before_int = (int)(temp_before_Radiator * 10); 
-        int temp_after_int  = (int)(temp_after_Radiator * 10); 
+        adc_snapshot_t adc_snapshot = {0};
+        const adc_snapshot_status_t adc_status = adc_acquisition_read(
+            &adc_snapshot, HAL_GetTick());
 
+        if (adc_status == ADC_SNAPSHOT_OK) {
+            uint16_t reading1 = adc_snapshot.channels[THERMISTOR_PIN1];
+            uint16_t reading2 = adc_snapshot.channels[THERMISTOR_PIN2];
+            float convertedVoltage = ADC_TO_VOLTS(reading1);
+            float before_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltage);
+            float temp_before_Radiator = thermistorToCelsius(before_radiator_resistance);
+            float convertedVoltageAfter = ADC_TO_VOLTS(reading2);
+            float after_radiator_resistance = VOLTAGE_DIVIDER_RESISTANCE(convertedVoltageAfter);
+            float temp_after_Radiator = thermistorToCelsius(after_radiator_resistance);
+            int temp_before_int = (int)(temp_before_Radiator * 10);
+            int temp_after_int  = (int)(temp_after_Radiator * 10);
 
-        serial_log("Temperature before Radiator: %d.%d\r\n", temp_before_int / 10, temp_before_int % 10);
-        serial_log("Temperature after Radiator: %d.%d\r\n", temp_after_int / 10, temp_after_int % 10);
+            serial_log("Temperature before Radiator: %d.%d\r\n", temp_before_int / 10, temp_before_int % 10);
+            serial_log("Temperature after Radiator: %d.%d\r\n", temp_after_int / 10, temp_after_int % 10);
+        } else {
+            serial_log("Cooling ADC unavailable, status=%u errors=0x%08lX",
+                (unsigned)adc_status, (unsigned long)adc_snapshot.error_flags);
+        }
     
         xEventGroupSetBits(data->idwg_group, WD_COOLING);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(COOLING_DELAY_MS));

@@ -18,5 +18,8 @@ enum {
     WD_TELEMETRY = (1U << 13)
 };
 
-#define WD_ALL_TASKS ((1U << NUM_TASKS) - 1U)
+/* Availability supervision only: the IWDG is not a torque-safety mechanism.
+ * Optional logging/UI/telemetry/cooling/light/default services are excluded. */
+#define WD_REQUIRED_TASKS (WD_THROTTLE | WD_BPPS | WD_CAN_RX | WD_CAN_TX | \
+    WD_MOTOR_CONTROLLER | WD_STATE_MACHINE)
 #endif

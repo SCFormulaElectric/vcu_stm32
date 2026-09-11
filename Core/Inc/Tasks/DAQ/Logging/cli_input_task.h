@@ -11,13 +11,14 @@
 #define CLI_STACK_SIZE          2*KILOBYTE
 #define CLI_TASK_DELAY_MS       50
 #define CLI_TICKS_TO_WAIT       0
-#define CLI_BUFFER_SIZE         96
+#define CLI_BUFFER_SIZE         192
 
 #define NUM_PERIODIC_OUTPUTS    1
 #define IO_output_index         0
 
 #define PRINT_IO_PERIOD_MS      2000
 #define SERVICE_MODE_TIMEOUT_MS 300000
+#define VCU_CLI_TASK_CONTROL_ENABLED 0U
 
 typedef struct {
     char flag;

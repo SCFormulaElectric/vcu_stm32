@@ -2,15 +2,16 @@
 #define motor_control
 #include <stdint.h>
 #include "Peripherals/can_bus.h"
+#include "Tasks/Task_Helper/inverter_fault_status_policy.h"
 
-#define CAN_Command_Message_Lost_Fault 0x00000800U
+#define CAN_Command_Message_Lost_Fault CAN_MC_FAULT_COMMAND_MESSAGE_LOST
 
 typedef struct {
     uint8_t apps_fault;
     uint8_t bpps_fault;
 } external_motor_fault_t;
 
-//0x0A0-0x0A2
+/* CAN_ID_MC_TEMPERATURE_1 through CAN_ID_MC_TEMPERATURE_3 */
 typedef struct {
 	//Temperature 1
 	uint16_t INV_Module_A_Temp;     	// 0-1
@@ -29,7 +30,7 @@ typedef struct {
 	uint16_t INV_Torque_Shudder;		// 6-7
 } MC_temp_t;
 
-//0x0A3
+/* CAN_ID_MC_ANALOG_INPUTS */
 typedef struct {
 	//voltages
 	uint16_t INV_Analog_Input_1; // 10 bits 0-9
@@ -40,7 +41,7 @@ typedef struct {
 	uint16_t INV_Analog_Input_6;
 } analog_input_voltage_t;
 
-//0x0A4
+/* CAN_ID_MC_DIGITAL_INPUTS */
 typedef struct {
 	uint8_t INV_Digital_Input_1; // Status of Digital Input #1, Forward switch
 	uint8_t INV_Digital_Input_2; // Status of Digital Input #2, Reverse switch
@@ -52,7 +53,7 @@ typedef struct {
 	uint8_t INV_Digital_Input_8; // Status of Digital Input #8
 } digital_input_status_t;
 
-//0x0A5
+/* CAN_ID_MC_POSITION */
 typedef struct {
 	uint16_t INV_Motor_Angle_Electrical; // Angle The electrical angle of the motor as read by the encoder or resolver.
 	uint16_t INV_Motor_Speed; // Angular Velocity The measured speed of the motor.
@@ -61,7 +62,7 @@ typedef struct {
 ;
 } motor_position_information_t;
 
-//0x0A6
+/* CAN_ID_MC_CURRENT */
 typedef struct {
 	uint16_t INV_Phase_A_Current; // Current The measured value of Phase A Current.
 	uint16_t INV_Phase_B_Current; // Current The measured value of Phase B Current.
@@ -69,7 +70,7 @@ typedef struct {
 	uint16_t INV_DC_Bus_Current; // Current The calculated DC Bus current.
 } current_information_t;
 
-//0x0A7
+/* CAN_ID_MC_VOLTAGE */
 typedef struct {
 	uint16_t INV_DC_Bus_Voltage; // High Voltage The actual measured value of the DC bus voltage.
 	uint16_t INV_Output_Voltage; // High Voltage The calculated value of the output voltage, in peak line-neutral volts.
@@ -77,7 +78,7 @@ typedef struct {
 	uint16_t INV_VBC_Vq_Voltage; // High Voltage Measured value of the voltage between Phase B and Phase C (VBC) when the inverter is disabled. Vq voltage when the inverter is enabled
 } voltage_information_t;
 
-//0x0A8
+/* CAN_ID_MC_FLUX */
 typedef struct {
 	uint16_t INV_Vd_ff; // Flux D-axis voltage feed-forward.
 	uint16_t INV_Vq_ff; // Flux Q-axis voltage feed-forward
@@ -85,7 +86,7 @@ typedef struct {
 	uint16_t INV_Iq; // Current Q-axis current feedback
 } flux_information_t;
 
-//0x0A9
+/* CAN_ID_MC_INTERNAL_VOLTAGES */
 typedef struct {
 	uint16_t INV_Ref_Voltage_1_5; //Low Voltage 1.5V Reference voltage.
 	uint16_t INV_Ref_Voltage_2_5; //Low Voltage 2.5V Reference voltage.
@@ -93,7 +94,7 @@ typedef struct {
 	uint16_t INV_Ref_Voltage_12_0; //Low Voltage 12V Reference voltage.
 } internal_voltages_t;
 
-//0x0AA
+/* CAN_ID_MC_INTERNAL_STATES */
 typedef struct {
 	uint8_t INV_VSM_State; 	//Byte 0
 	//0: VSM Start State 
@@ -168,22 +169,14 @@ typedef struct {
 	uint8_t INV_Limit_Stall_Burst_Model;     // 7-Bit 7: Indicates if the current is being limited due to the stall burst model
 } internal_states_t;
 
-// 0x0AB: Fault Codes
-typedef struct {
-	uint16_t INV_Post_Fault_Lo; // Bytes 0-1: Each bit represents a POST fault
-	uint16_t INV_Post_Fault_Hi; // Bytes 2-3: Each bit represents a POST fault
-	uint16_t INV_Run_Fault_Lo;  // Bytes 4-5: Each bit represents a Run fault
-	uint16_t INV_Run_Fault_Hi;  // Bytes 6-7: Each bit represents a Run fault
-} fault_codes_t;
-
-// 0x0AC: Torque & Timer Information
+/* CAN_ID_MC_TORQUE_TIMER: Torque & Timer Information */
 typedef struct {
 	uint16_t INV_Commanded_Torque;   // Bytes 0-1: The commanded torque
 	uint16_t INV_Torque_Feedback;    // Bytes 2-3: The estimated motor torque
 	uint32_t INV_Power_On_Timer;     // Bytes 4-7: Power-on timer (Counts x 0.003 sec)
 } torque_timer_info_t;
 
-// 0x0AD: Modulation Index & Flux Weakening Output Information
+/* CAN_ID_MC_MODULATION_FLUX: Modulation Index & Flux Weakening Output Information */
 typedef struct {
 	uint16_t Modulation_Index;            // Bytes 0-1: Modulation index (divide by 100 for actual value)
 	uint16_t Flux_Weakening_Output;       // Bytes 2-3: Flux weakening output current/voltage
@@ -191,7 +184,7 @@ typedef struct {
 	uint16_t Id_Command_Current_2;        // Bytes 6-7: Commanded D-axis current (duplicate field as per table)
 } modulation_flux_info_t;
 
-// 0x0AE: Firmware Information
+/* CAN_ID_MC_FIRMWARE: Firmware Information */
 typedef struct {
 	uint16_t EEPROM_Version_Project_Code; // Bytes 0-1: EEPROM version/project code
 	uint16_t Software_Version;            // Bytes 2-3: Software version (major/minor)
@@ -199,12 +192,12 @@ typedef struct {
 	uint16_t Date_Code_YYYY;              // Bytes 6-7: Date code (yyyy)
 } firmware_info_t;
 
-// 0x0AF: Diagnostic Data (details not specified)
+/* CAN_ID_MC_DIAGNOSTIC: Diagnostic Data (details not specified) */
 typedef struct {
 	uint8_t data[8]; // Placeholder for diagnostic data, see section 6.8 for details
 } diagnostic_data_t;
 
-// 0x0B0: High Speed Message
+/* CAN_ID_MC_HIGH_SPEED: High Speed Message */
 typedef struct {
 	uint16_t Torque_Command;      // Bytes 0-1: Commanded torque
 	uint16_t Torque_Feedback;     // Bytes 2-3: Estimated motor torque
@@ -212,7 +205,7 @@ typedef struct {
 	uint16_t DC_Bus_Voltage;      // Bytes 6-7: Measured DC bus voltage
 } high_speed_msg_t;
 
-// 0x0B1: Torque Capability
+/* CAN_ID_MC_TORQUE_CAPABILITY: Torque Capability */
 typedef struct {
 	uint16_t Motor_Torque_Available; // Bytes 0-1: Available motoring torque
 	uint16_t Regen_Torque_Available; // Bytes 2-3: Available regen torque
@@ -220,7 +213,7 @@ typedef struct {
 	uint16_t reserved2;              // Bytes 6-7: NA
 } torque_capability_t;
 
-//0x0C2
+/* CAN_ID_MC_PARAMETER_RESPONSE */
 typedef struct {
 	uint16_t Parameter_Address;
 	uint8_t Write_Success;
@@ -256,5 +249,8 @@ typedef struct {
     volatile parameter_response_t param_response;
 } MotorControl_t;
 
-uint8_t is_fault(const volatile fault_codes_t *faults);
+void motor_control_publish_fault_status(MotorControl_t *control,
+    const fault_codes_t *fault_codes, uint32_t tick);
+void motor_control_read_fault_status(const MotorControl_t *control,
+    inverter_fault_status_snapshot_t *snapshot);
 #endif

@@ -1,5 +1,24 @@
 #include "Tasks/DAQ/Logging/cli_input_task.h"
 #include "Tasks/Critical/throttle_task.h"
+#include "Tasks/Task_Helper/handles.h"
+#include <stdlib.h>
+
+/* CLI replies remain available when background logging is intentionally off.
+ * This function bypasses the SD/log-level routing and writes only to USB CDC. */
+static void cli_serial_log(const char *fmt, ...)
+{
+    char message[LOG_MSG_MAX_LEN - 2U];
+    char line[LOG_MSG_MAX_LEN];
+    va_list args;
+
+    va_start(args, fmt);
+    (void)vsnprintf(message, sizeof(message), fmt, args);
+    va_end(args);
+    (void)snprintf(line, sizeof(line), "%s\r\n", message);
+    __serial_print(line);
+}
+
+#define serial_log cli_serial_log
 
 // Task: CLI Input
 cli_output_entry_t cli_output[NUM_PERIODIC_OUTPUTS] = {0};
@@ -11,6 +30,13 @@ static void print_help(app_data_t *app, const char *topic);
 static void print_tasks(app_data_t *app);
 static void print_io(void);
 static void print_can(const app_data_t *data);
+static void print_bms_status(const app_data_t *data);
+static void print_bms_summary(const app_data_t *data);
+static void print_bms_config(const app_data_t *data);
+static void print_bms_signals(void);
+static uint8_t queue_bms_command(app_data_t *data, uint8_t opcode,
+    uint8_t transaction, uint8_t argument, uint32_t descriptor);
+static void process_bms_slot_command(app_data_t *data, const char *cmd);
 static void print_storage(const app_data_t *data);
 static void print_reset_cause(void);
 static void print_health(const app_data_t *data);
@@ -35,12 +61,14 @@ static const char *car_state_name(car_state_t state) {
 }
 
 static void print_status(const app_data_t *data) {
+    inverter_fault_status_snapshot_t inverter_status = {0};
+    motor_control_read_fault_status(&data->motorControl, &inverter_status);
     serial_log("STATUS state=%s rtd=%u rtd_sound=%u faults=0x%08lX apps=%u bpps=%u inverter_fresh=%u throttle=%u pedal_command=%u brake=%u",
         car_state_name(data->car_state), (unsigned)data->ready_to_drive,
         (unsigned)data->rtd_sound_active, (unsigned long)data->safety_faults,
         (unsigned)data->motorControl.input_faults.apps_fault,
         (unsigned)data->motorControl.input_faults.bpps_fault,
-        (unsigned)data->motorControl.fault_codes_valid,
+        (unsigned)inverter_status.valid,
         (unsigned)data->throttle_level,
         (unsigned)data->motorControl.torqueCommand,
         (unsigned)data->brake_level);
@@ -49,41 +77,234 @@ static void print_status(const app_data_t *data) {
 static void print_inspection_status(const app_data_t *data) {
     const uint8_t tsms = (HAL_GPIO_ReadPin(GPIOA, TSMS_PIN) == GPIO_PIN_SET);
     const uint8_t bms = (HAL_GPIO_ReadPin(GPIOA, BMS_PIN) == GPIO_PIN_SET);
+    inverter_fault_status_snapshot_t inverter_status = {0};
+    motor_control_read_fault_status(&data->motorControl, &inverter_status);
     serial_log("INSPECTION torque_permitted=%u", (data->car_state == CAR_ENABLE &&
         data->safety_faults == SAFETY_FAULT_NONE));
     serial_log("INSPECTION tsms=%u bms=%u apps_fault=%u bpps_fault=%u inverter_fault=%u",
         tsms, bms, data->motorControl.input_faults.apps_fault,
         data->motorControl.input_faults.bpps_fault,
-        is_fault(&data->motorControl.fault_codes));
+        is_fault(&inverter_status.fault_codes));
     serial_log("INSPECTION note=verify physical shutdown circuit, BSPD, IMD, AMS, inertia switch, and indicators at vehicle");
 }
 
 static void print_io(void) {
+    adc_snapshot_t adc_snapshot = {0};
+    const adc_snapshot_status_t adc_status = adc_acquisition_read(
+        &adc_snapshot, HAL_GetTick());
+
     serial_log("IO tsms=%u r2d=%u bms=%u brake_light=%u fault_indicator=%u",
         (unsigned)(HAL_GPIO_ReadPin(GPIOA, TSMS_PIN) == GPIO_PIN_SET),
         (unsigned)(HAL_GPIO_ReadPin(GPIOA, R2D_PIN) == GPIO_PIN_SET),
         (unsigned)(HAL_GPIO_ReadPin(GPIOA, BMS_PIN) == GPIO_PIN_SET),
         (unsigned)(HAL_GPIO_ReadPin(GPIOA, BRAKE_LIGHT_PIN) == GPIO_PIN_SET),
         (unsigned)(HAL_GPIO_ReadPin(GPIOA, HOOP_LIGHT_PIN) == GPIO_PIN_SET));
-    serial_log("ADC throttle1=%u throttle2=%u brake1=%u brake2=%u thermistor1=%u thermistor2=%u",
-        adc_buffer[0], adc_buffer[1], adc_buffer[2], adc_buffer[3], adc_buffer[4], adc_buffer[5]);
+    if (adc_status == ADC_SNAPSHOT_OK) {
+        serial_log("ADC throttle1=%u throttle2=%u brake1=%u brake2=%u thermistor1=%u thermistor2=%u sequence=%lu",
+            adc_snapshot.channels[0], adc_snapshot.channels[1],
+            adc_snapshot.channels[2], adc_snapshot.channels[3],
+            adc_snapshot.channels[4], adc_snapshot.channels[5],
+            (unsigned long)adc_snapshot.sample_sequence);
+    } else {
+        serial_log("ADC unavailable status=%u errors=0x%08lX sequence=%lu",
+            (unsigned)adc_status, (unsigned long)adc_snapshot.error_flags,
+            (unsigned long)adc_snapshot.sample_sequence);
+    }
 }
 
 static void print_can(const app_data_t *data) {
-    serial_log("CAN bitrate=500000 rx_pending=%u rx_dropped=%lu tx_pending=%u tx_errors=%lu bus_off=%lu",
+    serial_log("CAN bitrate=%lu rx_pending=%u fault_pending=%u bms_pending=%u rx_drop=%lu bms_drop=%lu rx_reject=%lu rx_malformed=%lu critical_updates=%lu",
+        (unsigned long)CAN_BUS_BITRATE_BPS,
         (unsigned)uxQueueMessagesWaiting(data->can_bus.can_rx_queue),
+        (unsigned)uxQueueMessagesWaiting(data->can_bus.can_rx_fault_queue),
+        (unsigned)uxQueueMessagesWaiting(data->can_bus.bms_rx_queue),
         (unsigned long)data->can_bus.rx_dropped,
+        (unsigned long)data->can_bus.bms_rx_dropped,
+        (unsigned long)data->can_bus.rx_rejected,
+        (unsigned long)data->can_bus.rx_malformed,
+        (unsigned long)data->can_bus.rx_critical_updates);
+    serial_log("CAN tx_pending=%u motor_pending=%u tx_errors=%lu bus_off=%lu tx_latched=%u",
         (unsigned)uxQueueMessagesWaiting(data->can_bus.can_tx_queue),
+        (unsigned)uxQueueMessagesWaiting(data->can_bus.motor_command_queue),
         (unsigned long)data->can_bus.tx_errors,
-        (unsigned long)data->can_bus.bus_off_count);
+        (unsigned long)data->can_bus.bus_off_count,
+        (unsigned)data->can_bus.tx_safety.fault_latched);
+    serial_log("CAN_TX queue=%lu dlc=%lu mailbox=%lu hal=%lu requeue=%lu busoff=%lu generic_c0=%lu inhibit=%u",
+        (unsigned long)data->can_bus.tx_safety.queue_failures,
+        (unsigned long)data->can_bus.tx_safety.invalid_dlc_failures,
+        (unsigned long)data->can_bus.tx_safety.mailbox_timeout_failures,
+        (unsigned long)data->can_bus.tx_safety.hal_transmit_failures,
+        (unsigned long)data->can_bus.tx_safety.requeue_failures,
+        (unsigned long)data->can_bus.tx_safety.bus_off_failures,
+        (unsigned long)data->can_bus.tx_safety.generic_motor_command_failures,
+        (unsigned)data->can_bus.tx_safety.inhibit_requested);
+}
+
+static void print_bms_status(const app_data_t *data) {
+    const uint32_t now = (uint32_t)xTaskGetTickCount();
+    const uint32_t stale_ms = (uint32_t)data->bms.layout.period_ms * 2U + 1000U;
+    const uint8_t online = (data->bms.last_rx_ms != 0U &&
+        (uint32_t)(now - data->bms.last_rx_ms) <= stale_ms) ? 1U : 0U;
+
+    serial_log("BMS online=%u layout_valid=%u generation=%u summaries=%u period_ms=%u seen=0x%04X",
+        online, data->bms.layout_valid, data->bms.layout.generation,
+        data->bms.layout.active_count, data->bms.layout.period_ms,
+        data->bms.summary_seen_mask);
+    serial_log("BMS_ACK count=%lu opcode=0x%02X transaction=%u status=%u open=%u rx_malformed=%lu",
+        (unsigned long)data->bms.ack_count, data->bms.last_opcode,
+        data->bms.last_transaction, data->bms.last_status,
+        data->bms.transaction_open,
+        (unsigned long)data->bms.malformed_frames);
+}
+
+static void print_bms_summary(const app_data_t *data) {
+    const bms_client_values_t *values = &data->bms.values;
+
+    serial_log("BMS_SUMMARY state=%u soc_permille=%u pack_mv=%ld pack_ma=%ld",
+        values->state, values->soc_permille, (long)values->pack_voltage_mv,
+        (long)values->pack_current_ma);
+    serial_log("BMS_SUMMARY min_cell_mv=%u max_cell_mv=%u max_temp_dc=%d active=0x%08lX latched=0x%08lX",
+        values->minimum_cell_mv, values->maximum_cell_mv,
+        values->maximum_temperature_dc, (unsigned long)values->active_faults,
+        (unsigned long)values->latched_faults);
+    serial_log("BMS_SUMMARY outputs=0x%02X cells=%u temperatures=%u valid=0x%08lX",
+        values->output_requests, values->valid_cell_count,
+        values->valid_temperature_count,
+        (unsigned long)values->valid_signals);
+}
+
+static void print_bms_config(const app_data_t *data) {
+    uint32_t slot;
+
+    serial_log("BMS_CONFIG generation=%u count=%u period_ms=%u valid=%u readback=%u",
+        data->bms.layout.generation, data->bms.layout.active_count,
+        data->bms.layout.period_ms, data->bms.layout_valid,
+        data->bms.readback_in_progress);
+    for (slot = 0U; slot < data->bms.layout.active_count; slot++) {
+        char line[LOG_MSG_MAX_LEN] = {0};
+        size_t used = (size_t)snprintf(line, sizeof(line),
+            "BMS_SLOT %lu", (unsigned long)slot);
+        uint32_t signal_index;
+
+        for (signal_index = 0U;
+            signal_index < BMS_CAN_SUMMARY_MAX_SIGNALS; signal_index++) {
+            const uint8_t signal =
+                data->bms.layout.slots[slot].signals[signal_index];
+            int written;
+            if (signal == BMS_CAN_SIGNAL_NONE || used >= sizeof(line)) {
+                break;
+            }
+            written = snprintf(&line[used], sizeof(line) - used, " %s",
+                bms_client_signal_name(signal));
+            if (written < 0 || (size_t)written >= sizeof(line) - used) {
+                break;
+            }
+            used += (size_t)written;
+        }
+        serial_log("%s", line);
+    }
+}
+
+static void print_bms_signals(void) {
+    uint8_t signal;
+    char line[LOG_MSG_MAX_LEN] = "BMS_SIGNALS";
+    size_t used = strlen(line);
+
+    for (signal = 1U; signal <= BMS_CAN_SIGNAL_MAX; signal++) {
+        const char *name = bms_client_signal_name(signal);
+        const int written = snprintf(&line[used], sizeof(line) - used,
+            " %s", name);
+        if (written < 0 || (size_t)written >= sizeof(line) - used) {
+            serial_log("%s", line);
+            (void)snprintf(line, sizeof(line), "BMS_SIGNALS %s", name);
+            used = strlen(line);
+        } else {
+            used += (size_t)written;
+        }
+    }
+    serial_log("%s", line);
+}
+
+static uint8_t queue_bms_command(app_data_t *data, uint8_t opcode,
+    uint8_t transaction, uint8_t argument, uint32_t descriptor) {
+    can_tx_message_t message = {0};
+
+    message.tx_id = BMS_CAN_COMMAND_ID;
+    message.dlc = BMS_CAN_FRAME_DLC;
+    bms_client_build_command(opcode, transaction, argument, descriptor,
+        message.tx_packet);
+    if (can_bus_queue_generic_message(&data->can_bus, &message) != pdPASS) {
+        serial_log("BMS command queue failed opcode=0x%02X transaction=%u",
+            opcode, transaction);
+        return 0U;
+    }
+    serial_log("BMS command queued opcode=0x%02X transaction=%u",
+        opcode, transaction);
+    return 1U;
+}
+
+static void process_bms_slot_command(app_data_t *data, const char *cmd) {
+    char copy[CLI_BUFFER_SIZE];
+    char *token;
+    uint8_t signals[BMS_CAN_SUMMARY_MAX_SIGNALS] = {0};
+    uint32_t signal_count = 0U;
+    uint32_t packed_bytes = 0U;
+    unsigned long slot;
+
+    (void)snprintf(copy, sizeof(copy), "%s", cmd);
+    token = strtok(copy, " ");
+    token = (token != NULL) ? strtok(NULL, " ") : NULL;
+    token = (token != NULL) ? strtok(NULL, " ") : NULL;
+    token = (token != NULL) ? strtok(NULL, " ") : NULL;
+    if (token == NULL) {
+        serial_log("Usage: bms summary slot <0..15> <signal...>");
+        return;
+    }
+    slot = strtoul(token, NULL, 10);
+    if (slot >= BMS_CAN_SUMMARY_MAX_FRAMES) {
+        serial_log("Invalid BMS summary slot %lu", slot);
+        return;
+    }
+    while ((token = strtok(NULL, " ")) != NULL) {
+        uint8_t signal;
+        uint8_t width;
+        if (signal_count >= BMS_CAN_SUMMARY_MAX_SIGNALS ||
+            bms_client_signal_from_name(token, &signal) == 0U) {
+            serial_log("Invalid or excessive BMS signal: %s", token);
+            return;
+        }
+        width = bms_client_signal_width(signal);
+        if (packed_bytes + width > BMS_CAN_FRAME_DLC) {
+            serial_log("BMS slot payload exceeds 8 bytes");
+            return;
+        }
+        signals[signal_count++] = signal;
+        packed_bytes += width;
+    }
+    if (signal_count == 0U) {
+        serial_log("A BMS summary slot requires at least one signal");
+        return;
+    }
+    (void)queue_bms_command(data, BMS_CAN_CMD_SET_SLOT,
+        data->bms.transaction_id, (uint8_t)slot,
+        bms_client_pack_descriptor(signals));
 }
 
 static void print_storage(const app_data_t *data) {
     const char *owner = (sd_card_owner == MCU_SD_CARD) ? "MCU" : "USB";
-    serial_log("STORAGE owner=%s file_open=%u log_number=%lu queue_pending=%u",
-        owner, (unsigned)data->sd_card.file_opened,
+    serial_log("STORAGE owner=%s state=%u result=%u mounted=%u file_open=%u log_number=%lu queue_pending=%u",
+        owner, (unsigned)data->sd_card.policy.state,
+        (unsigned)data->sd_card.policy.last_result,
+        (unsigned)data->sd_card.mounted, (unsigned)data->sd_card.file_opened,
         (unsigned long)data->sd_card.log_number,
-        (unsigned)uxQueueMessagesWaiting(data->sd_card.sd_card_q));
+        (unsigned)((data->sd_card.sd_card_q != NULL) ?
+            uxQueueMessagesWaiting(data->sd_card.sd_card_q) : 0U));
+    serial_log("STORAGE errors=%lu dropped=%lu written=%lu recovery_pending=%u msc_enabled=%u",
+        (unsigned long)data->sd_card.policy.error_count,
+        (unsigned long)data->sd_card.policy.dropped_records,
+        (unsigned long)data->sd_card.policy.records_written,
+        (unsigned)data->sd_card.policy.recovery_requested,
+        (unsigned)VCU_USB_MSC_SD_ENABLED);
 }
 
 static void print_reset_cause(void) {
@@ -101,13 +322,16 @@ static void print_health(const app_data_t *data) {
     const uint8_t bms = (HAL_GPIO_ReadPin(GPIOA, BMS_PIN) == GPIO_PIN_SET);
     const uint8_t r2d = (HAL_GPIO_ReadPin(GPIOA, R2D_PIN) == GPIO_PIN_SET);
     const TickType_t now = xTaskGetTickCount();
-    const uint8_t inverter_fresh = (data->motorControl.fault_codes_valid != 0U) &&
-        ((now - data->motorControl.fault_codes_last_tick) <= pdMS_TO_TICKS(250));
+    inverter_fault_status_snapshot_t inverter_status = {0};
+    motor_control_read_fault_status(&data->motorControl, &inverter_status);
+    const uint8_t inverter_fresh = inverter_fault_status_snapshot_is_fresh(
+        &inverter_status, (uint32_t)now,
+        (uint32_t)pdMS_TO_TICKS(CAN_INVERTER_FAULT_STATUS_TIMEOUT_MS));
     const uint8_t healthy = (data->safety_faults == SAFETY_FAULT_NONE) &&
         (tsms != 0U) && (bms != 0U) && (r2d != 0U) &&
         (data->motorControl.input_faults.apps_fault == 0U) &&
         (data->motorControl.input_faults.bpps_fault == 0U) &&
-        (inverter_fresh != 0U) && !is_fault(&data->motorControl.fault_codes);
+        (inverter_fresh != 0U) && !is_fault(&inverter_status.fault_codes);
 
     serial_log("HEALTH result=%s state=%s tsms=%u bms=%u r2d=%u apps=%u bpps=%u inverter_fresh=%u faults=0x%08lX",
         healthy ? "PASS" : "WARN", car_state_name(data->car_state), tsms, bms, r2d,
@@ -119,7 +343,8 @@ static void print_health(const app_data_t *data) {
 static void print_self_test(const app_data_t *data) {
     uint8_t tasks_ok = 1U;
     for (size_t i = 0; i < NUM_TASKS; i++) {
-        if (data->task_entries[i].handle == NULL) {
+        if (i != sd_card_task_index &&
+            data->task_entries[i].handle == NULL) {
             tasks_ok = 0U;
             break;
         }
@@ -127,15 +352,13 @@ static void print_self_test(const app_data_t *data) {
 
     const uint8_t queues_ok = (data->cli_queue != NULL) &&
         (data->can_bus.can_rx_queue != NULL) &&
+        (data->can_bus.can_rx_fault_queue != NULL) &&
+        (data->can_bus.bms_rx_queue != NULL) &&
         (data->can_bus.can_tx_queue != NULL) &&
-        (data->sd_card.sd_card_q != NULL);
-    uint8_t adc_ok = 1U;
-    for (size_t i = 0; i < ADC_CHANNEL_COUNT; i++) {
-        if (adc_buffer[i] > 4095U) {
-            adc_ok = 0U;
-            break;
-        }
-    }
+        (data->can_bus.motor_command_queue != NULL);
+    adc_snapshot_t adc_snapshot = {0};
+    const uint8_t adc_ok = (adc_acquisition_read(&adc_snapshot,
+        HAL_GetTick()) == ADC_SNAPSHOT_OK);
     const uint8_t config_ok = config_is_valid(data);
     const uint8_t pass = tasks_ok && queues_ok && adc_ok && config_ok;
 
@@ -251,14 +474,19 @@ void print_toggled_outputs() {
         GPIO_PinState dpin1 = HAL_GPIO_ReadPin(GPIOA, TSMS_PIN);
         GPIO_PinState dpin2 = HAL_GPIO_ReadPin(GPIOA, R2D_PIN);
         GPIO_PinState dpin3 = HAL_GPIO_ReadPin(GPIOA, BMS_PIN);
-        uint16_t a_value1 = adc_buffer[0];
-        uint16_t a_value2 = adc_buffer[1];
-        uint16_t a_value3 = adc_buffer[2];
-        uint16_t a_value4 = adc_buffer[3];
-        uint16_t a_value5 = adc_buffer[4];
-        uint16_t a_value6 = adc_buffer[5];
-        serial_log("ADC1: %u ADC2: %u ADC3: %u ADC4: %u ADC5: %u ADC6: %u",
-                    a_value1, a_value2, a_value3, a_value4, a_value5, a_value6);
+        adc_snapshot_t adc_snapshot = {0};
+        const adc_snapshot_status_t adc_status = adc_acquisition_read(
+            &adc_snapshot, HAL_GetTick());
+        if (adc_status == ADC_SNAPSHOT_OK) {
+            serial_log("ADC1: %u ADC2: %u ADC3: %u ADC4: %u ADC5: %u ADC6: %u",
+                adc_snapshot.channels[0], adc_snapshot.channels[1],
+                adc_snapshot.channels[2], adc_snapshot.channels[3],
+                adc_snapshot.channels[4], adc_snapshot.channels[5]);
+        } else {
+            serial_log("ADC unavailable status=%u errors=0x%08lX",
+                (unsigned)adc_status,
+                (unsigned long)adc_snapshot.error_flags);
+        }
         serial_log("DIN tsms=%d r2d=%d bms=%d", dpin1, dpin2, dpin3);
     }
 }
@@ -332,11 +560,13 @@ void process_cmd(app_data_t *app, const char *cmd) {
     }
 
     if (strcmp(cmd, "faults") == 0) {
+        inverter_fault_status_snapshot_t inverter_status = {0};
+        motor_control_read_fault_status(&app->motorControl, &inverter_status);
         serial_log("FAULTS active=0x%08lX apps=%u bpps=%u inverter=%u",
             (unsigned long)app->safety_faults,
             app->motorControl.input_faults.apps_fault,
             app->motorControl.input_faults.bpps_fault,
-            is_fault(&app->motorControl.fault_codes));
+            is_fault(&inverter_status.fault_codes));
         return;
     }
 
@@ -350,8 +580,109 @@ void process_cmd(app_data_t *app, const char *cmd) {
         return;
     }
 
+    if (strcmp(cmd, "bms") == 0 || strcmp(cmd, "bms status") == 0) {
+        print_bms_status(app);
+        return;
+    }
+
+    if (strcmp(cmd, "bms summary") == 0 ||
+        strcmp(cmd, "bms summary show") == 0) {
+        print_bms_summary(app);
+        return;
+    }
+
+    if (strcmp(cmd, "bms config show") == 0) {
+        print_bms_config(app);
+        return;
+    }
+
+    if (strcmp(cmd, "bms signals") == 0) {
+        print_bms_signals();
+        return;
+    }
+
+    if (strcmp(cmd, "bms config read") == 0) {
+        const uint8_t transaction = bms_client_allocate_transaction(&app->bms);
+        (void)queue_bms_command(app, BMS_CAN_CMD_READ_CONFIG,
+            transaction, 0U, 0U);
+        return;
+    }
+
+    if (strncmp(cmd, "bms config ", 11) == 0 ||
+        strncmp(cmd, "bms summary count ", 18) == 0 ||
+        strncmp(cmd, "bms summary slot ", 17) == 0) {
+        if (service_mode_active() == 0U) {
+            serial_log("BMS configuration requires: service begin");
+            return;
+        }
+    }
+
+    if (strcmp(cmd, "bms config begin") == 0) {
+        const uint8_t transaction = bms_client_allocate_transaction(&app->bms);
+        if (queue_bms_command(app, BMS_CAN_CMD_BEGIN, transaction, 0U,
+            0U) != 0U) {
+            serial_log("Wait for the BEGIN acknowledgement before editing");
+        }
+        return;
+    }
+
+    {
+        unsigned int summary_count;
+        if (sscanf(cmd, "bms summary count %u", &summary_count) == 1) {
+            if (app->bms.transaction_open == 0U) {
+                serial_log("Start a BMS configuration transaction first");
+            } else if (summary_count > BMS_CAN_SUMMARY_MAX_FRAMES) {
+                serial_log("BMS summary count must be 0 to %u",
+                    BMS_CAN_SUMMARY_MAX_FRAMES);
+            } else {
+                (void)queue_bms_command(app, BMS_CAN_CMD_SET_COUNT,
+                    app->bms.transaction_id, (uint8_t)summary_count, 0U);
+            }
+            return;
+        }
+    }
+
+    if (strncmp(cmd, "bms summary slot ", 17) == 0) {
+        if (app->bms.transaction_open == 0U) {
+            serial_log("Start a BMS configuration transaction first");
+        } else {
+            process_bms_slot_command(app, cmd);
+        }
+        return;
+    }
+
+    if (strcmp(cmd, "bms config validate") == 0 ||
+        strcmp(cmd, "bms config commit") == 0 ||
+        strcmp(cmd, "bms config abort") == 0) {
+        uint8_t opcode = BMS_CAN_CMD_VALIDATE;
+        if (app->bms.transaction_open == 0U) {
+            serial_log("No BMS configuration transaction is open");
+            return;
+        }
+        if (strcmp(cmd, "bms config commit") == 0) {
+            opcode = BMS_CAN_CMD_COMMIT;
+        } else if (strcmp(cmd, "bms config abort") == 0) {
+            opcode = BMS_CAN_CMD_ABORT;
+        }
+        (void)queue_bms_command(app, opcode, app->bms.transaction_id,
+            0U, 0U);
+        return;
+    }
+
+    if (strcmp(cmd, "bms config save") == 0) {
+        const uint8_t transaction = bms_client_allocate_transaction(&app->bms);
+        (void)queue_bms_command(app, BMS_CAN_CMD_SAVE, transaction, 0U, 0U);
+        return;
+    }
+
     if (strcmp(cmd, "storage") == 0) {
         print_storage(app);
+        return;
+    }
+
+    if (strcmp(cmd, "storage retry") == 0) {
+        storage_policy_request_recovery(&app->sd_card.policy);
+        serial_log("STORAGE recovery requested");
         return;
     }
 
@@ -376,20 +707,32 @@ void process_cmd(app_data_t *app, const char *cmd) {
     }
 
     if (strncmp(cmd, "pedal mode ", 11) == 0) {
+        const char *mode = cmd + 11;
+        pedal_response_mode_t selected_mode;
+        uint8_t changed = 0U;
+        if (strcmp(mode, "linear") == 0) {
+            selected_mode = PEDAL_RESPONSE_LINEAR;
+        } else if (strcmp(mode, "early") == 0) {
+            selected_mode = PEDAL_RESPONSE_EARLY;
+        } else if (strcmp(mode, "balanced") == 0) {
+            selected_mode = PEDAL_RESPONSE_BALANCED;
+        } else if (strcmp(mode, "progressive") == 0) {
+            selected_mode = PEDAL_RESPONSE_PROGRESSIVE;
+        } else {
+            serial_log("Invalid pedal mode: %s; use linear, early, balanced, or progressive", mode);
+            return;
+        }
         if (!config_change_allowed(app)) {
             return;
         }
-        const char *mode = cmd + 11;
-        if (strcmp(mode, "linear") == 0) {
-            app->pedal_response.mode = PEDAL_RESPONSE_LINEAR;
-        } else if (strcmp(mode, "early") == 0) {
-            app->pedal_response.mode = PEDAL_RESPONSE_EARLY;
-        } else if (strcmp(mode, "balanced") == 0) {
-            app->pedal_response.mode = PEDAL_RESPONSE_BALANCED;
-        } else if (strcmp(mode, "progressive") == 0) {
-            app->pedal_response.mode = PEDAL_RESPONSE_PROGRESSIVE;
-        } else {
-            serial_log("Invalid pedal mode: %s; use linear, early, balanced, or progressive", mode);
+        taskENTER_CRITICAL();
+        if (app->car_state == CAR_IDLE && app->ready_to_drive == 0U) {
+            app->pedal_response.mode = selected_mode;
+            changed = 1U;
+        }
+        taskEXIT_CRITICAL();
+        if (changed == 0U) {
+            serial_log("Refusing pedal configuration change: vehicle is not IDLE");
             return;
         }
         serial_log("PEDAL mode=%s", pedal_response_mode_name(app->pedal_response.mode));
@@ -398,14 +741,25 @@ void process_cmd(app_data_t *app, const char *cmd) {
 
     unsigned int strength_percent = 0U;
     if (sscanf(cmd, "pedal strength %u", &strength_percent) == 1) {
-        if (!config_change_allowed(app)) {
-            return;
-        }
+        uint8_t changed = 0U;
         if (strength_percent > 100U) {
             serial_log("Invalid pedal strength %u; use 0 to 100", strength_percent);
             return;
         }
-        app->pedal_response.strength = (uint16_t)(strength_percent * 10U);
+        if (!config_change_allowed(app)) {
+            return;
+        }
+        taskENTER_CRITICAL();
+        if (app->car_state == CAR_IDLE && app->ready_to_drive == 0U) {
+            app->pedal_response.strength =
+                (uint16_t)(strength_percent * 10U);
+            changed = 1U;
+        }
+        taskEXIT_CRITICAL();
+        if (changed == 0U) {
+            serial_log("Refusing pedal configuration change: vehicle is not IDLE");
+            return;
+        }
         serial_log("PEDAL strength=%u percent=%u", (unsigned)app->pedal_response.strength,
             strength_percent);
         return;
@@ -464,6 +818,13 @@ void process_cmd(app_data_t *app, const char *cmd) {
 }
 
 static void start_stop_task(app_data_t *app, const char* task_name, int value) {
+#if !VCU_CLI_TASK_CONTROL_ENABLED
+    (void)app;
+    (void)task_name;
+    (void)value;
+    serial_log("Task control is disabled in this vehicle build");
+    return;
+#else
     if (!service_mode_active()) {
         serial_log("Task control refused: use 'service begin' while vehicle is IDLE");
         return;
@@ -494,6 +855,7 @@ static void start_stop_task(app_data_t *app, const char* task_name, int value) {
         }
     }
     serial_log("Unknown task: %s", task_name);
+#endif
 }
 
 static void print_tasks(app_data_t *app) {
@@ -515,13 +877,15 @@ static void print_tasks(app_data_t *app) {
 
 static void print_help(app_data_t *app, const char *topic) {
     if (topic == NULL || topic[0] == '\0') {
-        serial_log("COMMANDS status health self-test inspection faults io sensors can storage reset-cause version tasks pedal config service reboot watch help");
+        serial_log("COMMANDS status health self-test inspection faults io sensors can bms storage reset-cause version tasks pedal config service reboot watch help");
         serial_log("READ-ONLY status health self-test inspection faults io sensors can storage reset-cause version tasks pedal config");
         serial_log("PEDAL pedal show | pedal preview | pedal mode linear|early|balanced|progressive | pedal strength 0..100");
         serial_log("CONFIG config show | config validate; settings are runtime-only");
         serial_log("SERVICE service begin|status|end; task control requires active service mode");
         serial_log("REBOOT reboot confirm; only allowed while vehicle is IDLE");
         serial_log("WATCH watch sensors | watch off");
+        serial_log("BMS bms status|summary show|config show|config read|signals");
+        serial_log("BMS EDIT service begin; bms config begin; bms summary count|slot; bms config validate|commit|save|abort");
         serial_log("HELP help <command>");
         serial_log("SERVICE <task_name>=1; safety tasks cannot be stopped");
         return;
@@ -540,8 +904,16 @@ static void print_help(app_data_t *app, const char *topic) {
         serial_log("io: show TSMS, R2D, BMS, outputs, and raw ADC values");
     } else if (strcmp(topic, "can") == 0) {
         serial_log("can: show bitrate, queue depth, dropped RX frames, TX errors, and bus-off count");
+    } else if (strcmp(topic, "bms") == 0) {
+        serial_log("bms status: show link and last acknowledgement");
+        serial_log("bms summary show | bms config show | bms config read | bms signals");
+        serial_log("Editing requires service begin, then bms config begin");
+        serial_log("bms summary count <0..16>");
+        serial_log("bms summary slot <0..15> <signal...>");
+        serial_log("bms config validate | commit | save | abort");
     } else if (strcmp(topic, "storage") == 0) {
-        serial_log("storage: show SD ownership, active log, and pending log records");
+        serial_log("storage: show optional SD state, errors, drops, and ownership");
+        serial_log("storage retry: retry only after a latched storage failure");
     } else if (strcmp(topic, "reset-cause") == 0) {
         serial_log("reset-cause: show hardware reset flags since the last reset");
     } else if (strcmp(topic, "version") == 0) {

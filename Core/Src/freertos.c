@@ -55,5 +55,24 @@
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
+void vcu_assert_failed(const char *file, int line)
+{
+  (void)file;
+  (void)line;
+  Error_Handler();
+}
+
+void vApplicationMallocFailedHook(void)
+{
+  Error_Handler();
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t task, char *task_name)
+{
+  (void)task;
+  (void)task_name;
+  Error_Handler();
+}
+
 /* USER CODE END Application */
 

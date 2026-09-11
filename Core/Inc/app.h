@@ -9,6 +9,7 @@
 #include "main.h"
 #include "Tasks/Task_Helper/motor_control.h"
 #include "Peripherals/can_bus.h"
+#include "Peripherals/bms_client.h"
 #include "Peripherals/usb_conf.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -22,7 +23,7 @@
 #define BPPS_PRIO               16
 #define APPS_PRIO               16
 #define IDWG_PRIO               16
-#define SD_CARD_PRIO            15
+#define SD_CARD_PRIO            2
 #define MCT_PRIO                14
 #define CAN_PRIO                12
 #define COOLING_PRIO            11
@@ -38,6 +39,7 @@
 #define CLI_ITEM_SIZE           sizeof(char)
 
 #define CAN_QUEUE_LENGTH        10
+#define BMS_CAN_QUEUE_LENGTH    32
 #define CAN_TX_MESSAGE_SIZE     sizeof(can_tx_message_t)
 #define CAN_RX_MESSAGE_SIZE     sizeof(can_rx_message_t)
 
@@ -45,7 +47,7 @@
 #define LOG_QUEUE_LENGTH        64
 #define LOG_MSG_SIZE            sizeof(log_msg_t)
 
-#define VCU_FIRMWARE_VERSION    "inspection-baseline"
+#define VCU_FIRMWARE_VERSION    "vcu-safety-remediation-2026-08-28"
 #define VCU_TARGET_MCU          "STM32F407VET6"
 
 // Helper function for all tasks!
@@ -85,7 +87,9 @@ typedef enum {
     SAFETY_FAULT_INVERTER   = (1U << 4),
     SAFETY_FAULT_CAN        = (1U << 5),
     SAFETY_FAULT_ADC        = (1U << 6),
-    SAFETY_FAULT_RTD        = (1U << 7)
+    SAFETY_FAULT_RTD        = (1U << 7),
+    SAFETY_FAULT_BOOT       = (1U << 8),
+    SAFETY_FAULT_COMMISSIONING = (1U << 9)
 } safety_fault_t;
 
 typedef enum {
@@ -114,6 +118,7 @@ typedef struct app_data_s {
     LogLevel            log_level;
 	can_bus_t           can_bus;
 	MotorControl_t      motorControl;
+	bms_client_t        bms;
 	QueueHandle_t       cli_queue;
 
 	volatile car_state_t    car_state;
@@ -123,6 +128,7 @@ typedef struct app_data_s {
     volatile uint32_t      safety_faults;
     volatile uint8_t       ready_to_drive;
     volatile uint8_t       rtd_sound_active;
+    volatile uint8_t       boot_healthy;
     EventGroupHandle_t      idwg_group;
     sd_card_t               sd_card;
 } app_data_t;

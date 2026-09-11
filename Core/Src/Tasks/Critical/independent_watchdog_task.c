@@ -9,15 +9,16 @@ void independent_watchdog_task(void *argument) {
     for (;;)
     {
         xEventGroupSetBits(data->idwg_group, WD_IDWG);
-        bits = xEventGroupWaitBits(data->idwg_group, WD_ALL_TASKS, pdTRUE, pdTRUE, window);
+        bits = xEventGroupWaitBits(data->idwg_group, WD_REQUIRED_TASKS,
+            pdTRUE, pdTRUE, window);
 
-        if ((bits & WD_ALL_TASKS) == WD_ALL_TASKS)
+        if ((bits & WD_REQUIRED_TASKS) == WD_REQUIRED_TASKS)
         {
             HAL_IWDG_Refresh(&hiwdg);
         }
         else 
         {
-            EventBits_t missing = WD_ALL_TASKS & (~bits);
+            EventBits_t missing = WD_REQUIRED_TASKS & (~bits);
             for (size_t i = 0; i < NUM_TASKS; i++) 
             {
                 if (missing & (1 << i)) 

@@ -25,20 +25,24 @@ void VCU_USB_CDC_Receive(uint8_t *buffer, uint32_t length)
 }
 void HAL_PCD_ConnectCallback(PCD_HandleTypeDef *hpcd)
 {
+#if VCU_USB_MSC_SD_ENABLED
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     if (app.task_entries[sd_card_task_index].handle != NULL) {
         xTaskNotifyFromISR(app.task_entries[sd_card_task_index].handle, USB_CONNECTED, eSetBits, &xHigherPriorityTaskWoken);
     }
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+#endif
     (void)hpcd;
 }
 
 void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 {
+#if VCU_USB_MSC_SD_ENABLED
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     if (app.task_entries[sd_card_task_index].handle != NULL) {
         xTaskNotifyFromISR(app.task_entries[sd_card_task_index].handle, USB_DISCONNECTED, eSetBits, &xHigherPriorityTaskWoken);
     }
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+#endif
     (void)hpcd;
 }

@@ -3,6 +3,10 @@
 #include "stm32f4xx_hal.h"
 #include "ff.h"
 #include "queue.h"
+#include "Peripherals/storage_policy.h"
+#ifndef VCU_USB_MSC_SD_ENABLED
+#define VCU_USB_MSC_SD_ENABLED 0U
+#endif
 #define USB_CONNECTED    (1 << 0)
 #define USB_DISCONNECTED (1 << 1)
 
@@ -19,7 +23,10 @@ typedef struct {
     FIL file;
     volatile char file_opened;
     uint32_t log_number;
+    uint32_t name_search_index;
     QueueHandle_t sd_card_q;
+    storage_policy_t policy;
+    volatile uint8_t mounted;
 } sd_card_t;
 
 extern volatile sd_card_owner_t sd_card_owner;

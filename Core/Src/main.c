@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include "Peripherals/adc.h"
 #include "Peripherals/can_bus.h"
+#include "Peripherals/can_rx_filter.h"
 #include "Peripherals/digital_pins.h"
 #include "Peripherals/usb_conf.h"
 #include "stm32f4xx_hal_adc.h"
@@ -58,6 +59,8 @@ SD_HandleTypeDef hsd;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim2;
+
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* Definitions for defaultTask */
@@ -68,8 +71,6 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 //   .priority = (osPriority_t) osPriorityNormal,
 // };
 /* USER CODE BEGIN PV */
-
-uint16_t adc_buffer[ADC_CHANNEL_COUNT];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -79,6 +80,7 @@ static void MX_ADC1_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_IWDG_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_SDIO_SD_Init(void);
 void StartDefaultTask(void *argument);
@@ -120,32 +122,23 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+#if VCU_IWDG_ENABLE
+  /* Cover every subsequent peripheral/task initialization failure. Hardware
+   * must independently keep the inverter disabled throughout reset and boot. */
+  MX_IWDG_Init();
+#endif
   MX_ADC1_Init();
+  MX_TIM2_Init();
   MX_CAN1_Init();
-  CAN_FilterTypeDef can_filter = {0};
-  can_filter.FilterBank = 0;
-  can_filter.FilterMode = CAN_FILTERMODE_IDMASK;
-  can_filter.FilterScale = CAN_FILTERSCALE_32BIT;
-  can_filter.FilterIdHigh = 0;
-  can_filter.FilterIdLow = 0;
-  can_filter.FilterMaskIdHigh = 0;
-  can_filter.FilterMaskIdLow = 0;
-  can_filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-  can_filter.FilterActivation = ENABLE;
-  can_filter.SlaveStartFilterBank = 14;
-  if (HAL_CAN_ConfigFilter(&hcan1, &can_filter) != HAL_OK ||
-      HAL_CAN_Start(&hcan1) != HAL_OK ||
-      HAL_CAN_ActivateNotification(&hcan1,
-          CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_ERROR | CAN_IT_BUSOFF) != HAL_OK)
-  {
-    Error_Handler();
-  }
   MX_SPI1_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-  if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, ADC_CHANNEL_COUNT) != HAL_OK)
+  adc_acquisition_init();
+  if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_dma_buffer,
+      ADC_DMA_BUFFER_COUNT) != HAL_OK ||
+      HAL_TIM_Base_Start(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -173,10 +166,19 @@ int main(void)
   /* Create the thread(s) */
   /* USER CODE BEGIN RTOS_THREADS */
   create_app();
-  if (app.startup_mode == START_ALL)
+  /* Start reception only after static queues and task notification handles
+   * exist, so no accepted startup frame can enter an unowned software path. */
+  if (can_rx_configure_filters(&hcan1) != HAL_OK ||
+      HAL_CAN_Start(&hcan1) != HAL_OK ||
+      HAL_CAN_ActivateNotification(&hcan1,
+          CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_ERROR | CAN_IT_BUSOFF) != HAL_OK)
   {
-    MX_IWDG_Init();
+    Error_Handler();
   }
+  /* All configured peripherals, queues, tasks, ADC acquisition, and CAN
+   * reception are established. State-machine torque enable remains gated by
+   * this flag and by its independent runtime prerequisites. */
+  app.boot_healthy = 1U;
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -273,10 +275,10 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ENABLE;
-  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_TRGO;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = ADC_CHANNEL_COUNT;
   hadc1.Init.DMAContinuousRequests = ENABLE;
@@ -344,6 +346,40 @@ static void MX_CAN1_Init(void)
  
   /* USER CODE END CAN1_Init 2 */
 
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* APB1 timer clock is 84 MHz: /84 /1000 = 1 kHz update/TRGO. */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 83;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 999;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /**
@@ -578,8 +614,35 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  app.boot_healthy = 0U;
+  app.car_state = CAR_IDLE;
+  app.ready_to_drive = 0U;
+  app.rtd_sound_active = 0U;
+  app.motorControl.torqueCommand = 0U;
+  app.motorControl.lastTorqueCommand = 0U;
+  app.can_bus.tx_safety.inhibit_requested = 1U;
+  app.can_bus.tx_safety.fault_latched = 1U;
+
+  /* Establish the only available local fault indication even when failure
+   * happened before normal GPIO initialization completed. PA4 is not a
+   * substitute for the rule-required hardwired RTM lights or TSSI. */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  {
+    GPIO_InitTypeDef fault_gpio = {0};
+    HAL_GPIO_WritePin(GPIOA, BRAKE_LIGHT_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, HOOP_LIGHT_PIN, GPIO_PIN_SET);
+    fault_gpio.Pin = BRAKE_LIGHT_PIN | HOOP_LIGHT_PIN;
+    fault_gpio.Mode = GPIO_MODE_OUTPUT_PP;
+    fault_gpio.Pull = GPIO_NOPULL;
+    fault_gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &fault_gpio);
+  }
+
+  /* A software reset records RCC_FLAG_SFTRST and avoids an indefinitely hung
+   * pre-scheduler processor. The early IWDG remains the fallback if reset does
+   * not complete. System-level torque safety must not rely on either reset. */
+  NVIC_SystemReset();
   while (1)
   {
   }

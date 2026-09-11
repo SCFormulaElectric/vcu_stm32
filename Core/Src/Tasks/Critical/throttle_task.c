@@ -5,13 +5,17 @@ void throttle_task(void *argument) {
 
     for (;;) {
         TickType_t start = xTaskGetTickCount();
-        uint16_t input_1 = adc_buffer[THROTTLE_PIN1];
-        uint16_t input_2 = adc_buffer[THROTTLE_PIN2];
+        adc_snapshot_t adc_snapshot = {0};
+        const adc_snapshot_status_t adc_status = adc_acquisition_read(
+            &adc_snapshot, HAL_GetTick());
+        uint16_t input_1 = adc_snapshot.channels[THROTTLE_PIN1];
+        uint16_t input_2 = adc_snapshot.channels[THROTTLE_PIN2];
         uint16_t throttle_1 = map_to_percentage(input_1, THROTTLE_PIN1_MIN, THROTTLE_PIN1_MAX);
         uint16_t throttle_2 = map_to_percentage(input_2, THROTTLE_PIN2_MIN, THROTTLE_PIN2_MAX);
 
         //If are signals are valid
-        if (input_1 >= THROTTLE_PIN1_MIN && input_1 <= THROTTLE_PIN1_MAX &&
+        if (adc_status == ADC_SNAPSHOT_OK &&
+            input_1 >= THROTTLE_PIN1_MIN && input_1 <= THROTTLE_PIN1_MAX &&
             input_2 >= THROTTLE_PIN2_MIN && input_2 <= THROTTLE_PIN2_MAX &&
             0 == invalid_signal_check(throttle_1, throttle_2)) {
             data->motorControl.input_faults.apps_fault = 0;
@@ -20,6 +24,7 @@ void throttle_task(void *argument) {
         else {
             data->motorControl.input_faults.apps_fault = 1;
             data->throttle_level = 0;
+            (void)can_bus_request_motor_inhibit(&data->can_bus);
         }
         xEventGroupSetBits(data->idwg_group, WD_THROTTLE);
         vTaskDelayUntil(&start, pdMS_TO_TICKS(THROTTLE_TASK_DELAY_MS));

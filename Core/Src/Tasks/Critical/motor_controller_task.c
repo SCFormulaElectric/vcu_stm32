@@ -15,9 +15,18 @@ void motor_controller_task(void *argument) {
     
     for (;;) {
         TickType_t start = xTaskGetTickCount();
+        inverter_fault_status_snapshot_t inverter_status = {0};
+        motor_control_read_fault_status(motorControl, &inverter_status);
+        const uint8_t inverter_status_safe =
+            inverter_fault_status_snapshot_is_fresh(&inverter_status,
+                (uint32_t)start,
+                (uint32_t)pdMS_TO_TICKS(CAN_INVERTER_FAULT_STATUS_TIMEOUT_MS)) &&
+            !is_fault(&inverter_status.fault_codes);
         // Check we are in the correct car state first
-        if (data->car_state != CAR_ENABLE){
-            (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
+        if (data->car_state != CAR_ENABLE || data->ready_to_drive == 0U ||
+            data->safety_faults != SAFETY_FAULT_NONE){
+            (void)can_bus_publish_motor_command(&data->can_bus,
+                &free_roll_can_msg, 1U);
             motorControl->lastTorqueCommand = 0;
             motorControl->torqueCommand = 0;
             xEventGroupSetBits(data->idwg_group, WD_MOTOR_CONTROLLER);
@@ -27,22 +36,31 @@ void motor_controller_task(void *argument) {
         switch(task_state) {
             case STATE_ENABLE:
                 uint16_t throttle = data->throttle_level;  
-                if (motorControl->input_faults.apps_fault != 0U || motorControl->input_faults.bpps_fault != 0U || is_fault(&motorControl->fault_codes)) {
-                        (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
+                if (motorControl->input_faults.apps_fault != 0U ||
+                    motorControl->input_faults.bpps_fault != 0U ||
+                    inverter_status_safe == 0U) {
+                        (void)can_bus_publish_motor_command(&data->can_bus,
+                            &free_roll_can_msg, 1U);
                         motorControl->lastTorqueCommand = 0;
                         motorControl->torqueCommand = 0;
                         task_state = STATE_DISABLE;
                         break;
                 }
                 if (throttle < THROTTLE_DEADZONE) {
-                    (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
+                    (void)can_bus_publish_motor_command(&data->can_bus,
+                        &free_roll_can_msg, 1U);
                     motorControl->lastTorqueCommand = 0;
                     motorControl->torqueCommand = 0;
                 }
                 else {
                     const uint16_t shaped_throttle = pedal_response_apply(
                         &data->pedal_response, throttle);
-                    uint16_t torque_x10 = (uint16_t)((shaped_throttle * MAX_TORQUE * 10) / 1000);
+                    const uint16_t requested_torque_x10 = (uint16_t)(
+                        (shaped_throttle * MAX_TORQUE * 10U) / 1000U);
+                    uint16_t torque_x10 = torque_request_limit_rise(
+                        motorControl->lastTorqueCommand,
+                        requested_torque_x10,
+                        MAX_TORQUE_RISE_X10_PER_CYCLE);
                     motorControl->torqueCommand = torque_x10;
                     // @todo @note Check if the cascadia motor controller needs constant torque commands.
                     if (torque_x10 == motorControl->lastTorqueCommand &&
@@ -50,7 +68,8 @@ void motor_controller_task(void *argument) {
                         break;
                     }
                     can_tx_message_t torque_cmd = create_motor_controller_command(torque_x10, 0, 1, 1, 0, 0, 0);
-                    if (xQueueSend(data->can_bus.can_tx_queue, &torque_cmd, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS)) == pdPASS) {
+                    if (can_bus_publish_motor_command(&data->can_bus,
+                        &torque_cmd, 0U) == pdPASS) {
                         motorControl->lastTorqueCommand = torque_x10;
                         last_command_tick = xTaskGetTickCount();
                     }
@@ -58,11 +77,15 @@ void motor_controller_task(void *argument) {
                 break;
 
             case STATE_DISABLE: 
+                (void)can_bus_publish_motor_command(&data->can_bus,
+                    &free_roll_can_msg, 1U);
+                motorControl->lastTorqueCommand = 0;
+                motorControl->torqueCommand = 0;
                 //checks that there is no longer a throttle or plausibility error
                 if(motorControl->input_faults.apps_fault == 0U && motorControl->input_faults.bpps_fault == 0U)
                 {
                     //if there is no motor control fault go straight to enable
-                    if (!is_fault(&motorControl->fault_codes)) {
+                    if (inverter_status_safe != 0U) {
                         task_state = STATE_ENABLE;
                         motorControl->lastTorqueCommand = 0;
                     }
@@ -80,7 +103,8 @@ void motor_controller_task(void *argument) {
                 else {
                     task_state = STATE_DISABLE;
                 }
-                    (void)xQueueSend(data->can_bus.can_tx_queue, &free_roll_can_msg, pdMS_TO_TICKS(MC_QUEUE_WAIT_MS));
+                    (void)can_bus_publish_motor_command(&data->can_bus,
+                        &free_roll_can_msg, 1U);
                     motorControl->torqueCommand = 0;
                     break;
 
@@ -116,9 +140,9 @@ can_tx_message_t create_motor_controller_command(
     uint8_t speed_mode_enable,
     uint16_t torque_limit) 
 {
-    can_tx_message_t motor_command;
-    motor_command.tx_id = 0x0C0;
-    motor_command.dlc = 8;
+    can_tx_message_t motor_command = {0};
+    motor_command.tx_id = CAN_ID_MC_COMMAND;
+    motor_command.dlc = CAN_DLC_MC_COMMAND;
     motor_command.tx_packet[0] = torque & 0xFF;        //lower
     motor_command.tx_packet[1] = (torque >> 8) & 0xFF; //upper
     motor_command.tx_packet[2] = speed & 0xFF;         //lower
@@ -138,9 +162,9 @@ can_tx_message_t create_motor_controller_rw_command(
     uint16_t data       //Bytes 4-5
     )   
 {
-    can_tx_message_t rw_command;
-    rw_command.dlc = 6;
-    rw_command.tx_id = 0x0C1;
+    can_tx_message_t rw_command = {0};
+    rw_command.dlc = CAN_DLC_MC_PARAMETER_RW;
+    rw_command.tx_id = CAN_ID_MC_PARAMETER_RW;
     rw_command.tx_packet[0] = param_addr & 0xFF;
     rw_command.tx_packet[1] = (param_addr >> 8) & 0xFF;
     rw_command.tx_packet[2] = rw & 0xFF;         
@@ -153,9 +177,8 @@ can_tx_message_t create_motor_controller_rw_command(
 /*It is recommended to send regularly scheduled CAN commands to the inverter when in CAN control
 mode. Some limiting functions act upon the receipt of the command and may not work properly if
 significant time exists between CAN commands. i.e. > 1 [s].*/
-/*default range of CAN message IDs is 0x0A0 – 0x0CF*/
-//0x0C1 Read Write
-//0x0C2 Response
+/* Broadcast IDs are defined in can_protocol.h. */
+/* CAN_ID_MC_PARAMETER_RW: Read/Write; CAN_ID_MC_PARAMETER_RESPONSE: Response. */
 /*20 Fault Clear Boolean
 Writing a 0 to this parameter clears any
 active faults. This command can be sent

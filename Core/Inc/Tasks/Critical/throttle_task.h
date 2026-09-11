@@ -5,6 +5,7 @@
 #include "Tasks/Task_Helper/watchdog_tasks_defs.h"
 #include <stdint.h>
 #include "semphr.h"
+#include "Tasks/Task_Helper/pedal_plausibility.h"
 
 #define THROTTLE_STACK_SIZE KILOBYTE
 #define MAX_PEDAL_DIFFERENCE 100
@@ -19,8 +20,10 @@
 #define THROTTLE_PIN2_MIN 330
 #define THROTTLE_PIN2_MAX 1892
 
-#define PEDAL_RESPONSE_DEFAULT_MODE     PEDAL_RESPONSE_EARLY
-#define PEDAL_RESPONSE_DEFAULT_STRENGTH 650U
+/* Commissioning default: preserve a direct, auditable APPS-to-request map.
+ * Nonlinear maps require vehicle validation and an EV.3.1.3 rules rationale. */
+#define PEDAL_RESPONSE_DEFAULT_MODE     PEDAL_RESPONSE_LINEAR
+#define PEDAL_RESPONSE_DEFAULT_STRENGTH 0U
 
 void throttle_task(void *argument);
 task_entry_t create_throttle_task(app_data_t *data);

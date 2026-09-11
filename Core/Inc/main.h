@@ -45,6 +45,7 @@ extern ADC_HandleTypeDef hadc1;
 extern CAN_HandleTypeDef hcan1;
 extern IWDG_HandleTypeDef hiwdg;
 extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim2;
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* USER CODE END EC */
 
@@ -63,7 +64,16 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
+/* Vehicle builds start the hardware watchdog immediately after safe GPIO
+ * defaults are established. Set to 0 only for an explicitly controlled bench
+ * build where the tractive system is physically incapable of producing torque. */
+#define VCU_IWDG_ENABLE 1U
 
+/* Commissioning release gate. Keep zero until the schematic/polarity review,
+ * inverter CAN contract, RTD sound output, pedal calibration, and HIL shutdown
+ * tests in docs/SAFETY_REMEDIATION_STATUS.md are closed and independently
+ * reviewed. This is intentionally not a runtime or CLI setting. */
+#define VCU_TORQUE_ENABLE_COMMISSIONED 0U
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

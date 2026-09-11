@@ -9,8 +9,15 @@ static uint8_t CLI_Q_STORAGE[ CLI_QUEUE_LENGTH * CLI_ITEM_SIZE ];
 
 static StaticQueue_t CAN_RX_Q;
 static uint8_t CAN_RX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_RX_MESSAGE_SIZE ];
+static StaticQueue_t CAN_RX_FAULT_Q;
+static uint8_t CAN_RX_FAULT_Q_STORAGE[ CAN_RX_MESSAGE_SIZE ];
+static StaticQueue_t BMS_CAN_RX_Q;
+static uint8_t BMS_CAN_RX_Q_STORAGE[
+    BMS_CAN_QUEUE_LENGTH * CAN_RX_MESSAGE_SIZE ];
 static StaticQueue_t CAN_TX_Q;
 static uint8_t CAN_TX_Q_STORAGE[ CAN_QUEUE_LENGTH * CAN_TX_MESSAGE_SIZE ];
+static StaticQueue_t MOTOR_COMMAND_Q;
+static uint8_t MOTOR_COMMAND_Q_STORAGE[ CAN_TX_MESSAGE_SIZE ];
 
 static uint8_t LOG_Q_STORAGE[ LOG_QUEUE_LENGTH * LOG_MSG_SIZE ];
 static StaticQueue_t SD_CARD_Q;
@@ -21,8 +28,13 @@ static task_entry_t entries[NUM_TASKS] = {0};
 static EventGroupHandle_t wd_event_group;
 void create_app(){
     // STARTUP CONFIGURATIONS
+#if VCU_IWDG_ENABLE
     app.startup_mode = START_ALL;
-    app.log_level = LOG_SD_CARD;
+#else
+    app.startup_mode = START_NO_IDWG;
+#endif
+    /* Logging is optional; the safe default requires neither SD nor USB CDC. */
+    app.log_level = LOG_NONE;
 
     // IDWG
     wd_event_group = xEventGroupCreate();
@@ -31,6 +43,7 @@ void create_app(){
 
     // MOTOR CONTROLLER STUFF
     app.car_state = CAR_IDLE;
+    app.boot_healthy = 0U;
     app.throttle_level = 0;
     app.brake_level = 0;
     app.pedal_response.mode = PEDAL_RESPONSE_DEFAULT_MODE;
@@ -41,19 +54,56 @@ void create_app(){
     app.can_bus = (can_bus_t){0};
     app.can_bus.hcan = &hcan1;
     QueueHandle_t can_rx_q_handle;
+    QueueHandle_t can_rx_fault_q_handle;
+    QueueHandle_t bms_can_rx_q_handle;
     QueueHandle_t can_tx_q_handle;
+    QueueHandle_t motor_command_q_handle;
+    can_tx_message_t initial_motor_command;
     can_rx_q_handle = xQueueCreateStatic( CAN_QUEUE_LENGTH,
                                 CAN_RX_MESSAGE_SIZE,
                                 CAN_RX_Q_STORAGE,
-                                &CAN_RX_Q );
+                                 &CAN_RX_Q );
+    can_rx_fault_q_handle = xQueueCreateStatic( 1U,
+                                CAN_RX_MESSAGE_SIZE,
+                                CAN_RX_FAULT_Q_STORAGE,
+                                &CAN_RX_FAULT_Q );
+    bms_can_rx_q_handle = xQueueCreateStatic(BMS_CAN_QUEUE_LENGTH,
+                                CAN_RX_MESSAGE_SIZE,
+                                BMS_CAN_RX_Q_STORAGE,
+                                &BMS_CAN_RX_Q);
     can_tx_q_handle = xQueueCreateStatic( CAN_QUEUE_LENGTH,
                                 CAN_TX_MESSAGE_SIZE,
                                 CAN_TX_Q_STORAGE,
                                 &CAN_TX_Q );
+    motor_command_q_handle = xQueueCreateStatic( 1U,
+                                CAN_TX_MESSAGE_SIZE,
+                                MOTOR_COMMAND_Q_STORAGE,
+                                &MOTOR_COMMAND_Q );
     configASSERT(can_rx_q_handle);
+    configASSERT(can_rx_fault_q_handle);
+    configASSERT(bms_can_rx_q_handle);
     configASSERT(can_tx_q_handle);
+    configASSERT(motor_command_q_handle);
     app.can_bus.can_rx_queue = can_rx_q_handle;
+    app.can_bus.can_rx_fault_queue = can_rx_fault_q_handle;
+    app.can_bus.bms_rx_queue = bms_can_rx_q_handle;
     app.can_bus.can_tx_queue = can_tx_q_handle;
+    app.can_bus.motor_command_queue = motor_command_q_handle;
+    can_tx_safety_initialize(&app.can_bus.tx_safety, &initial_motor_command);
+    if (xQueueOverwrite(motor_command_q_handle, &initial_motor_command) != pdPASS) {
+        can_tx_safety_latch_failure(&app.can_bus.tx_safety,
+            CAN_TX_FAILURE_QUEUE);
+    }
+    bms_client_initialize(&app.bms);
+    {
+        can_tx_message_t read_command = {0};
+        const uint8_t transaction = bms_client_allocate_transaction(&app.bms);
+        read_command.tx_id = BMS_CAN_COMMAND_ID;
+        read_command.dlc = BMS_CAN_FRAME_DLC;
+        bms_client_build_command(BMS_CAN_CMD_READ_CONFIG, transaction, 0U,
+            0U, read_command.tx_packet);
+        (void)can_bus_queue_generic_message(&app.can_bus, &read_command);
+    }
 
     // CLI STUFF
     QueueHandle_t cli_q_handle;
@@ -69,8 +119,8 @@ void create_app(){
                                 LOG_MSG_SIZE,
                                 LOG_Q_STORAGE,
                                 &SD_CARD_Q );
-    configASSERT(sd_card_q_handle != NULL);
     sd_card.sd_card_q = sd_card_q_handle;
+    storage_policy_initialize(&sd_card.policy, 0U);
     app.sd_card = sd_card;
 
 
@@ -90,7 +140,9 @@ void create_app(){
     app.task_entries[state_machine_task_index] = create_state_machine_task(&app);
     app.task_entries[telemetry_task_index] = create_telemetry_task(&app);
     for (size_t i = 0; i < NUM_TASKS; i++) {
-        configASSERT(app.task_entries[i].handle != NULL);
+        if (i != sd_card_task_index) {
+            configASSERT(app.task_entries[i].handle != NULL);
+        }
     }
     if(app.startup_mode == START_ALL || app.startup_mode == START_NO_IDWG) {
         for (size_t i = 0; i < NUM_TASKS; i++) {
@@ -120,7 +172,6 @@ void serial_log(const char *fmt, ...)
     }
 
     log_msg_t log;
-
     TickType_t ticks = xTaskGetTickCount();
     uint32_t ms = (ticks * 1000UL) / configTICK_RATE_HZ;
     uint32_t sec = ms / 1000;
@@ -133,17 +184,19 @@ void serial_log(const char *fmt, ...)
     va_end(args);
 
     snprintf(log.line, sizeof(log.line), "[%lu.%03lu] %s\r\n", sec, rem, msg);
-    __serial_print(log.line);
-
     if (app.log_level == LOG_SERIAL) {
+        __serial_print(log.line);
         return;
     }
 
-    if (sd_card_q_handle != NULL) {
+    if (sd_card_q_handle != NULL &&
+        storage_policy_accepts_logs(&app.sd_card.policy) != 0U) {
         BaseType_t status = xQueueSend(sd_card_q_handle, &log, 0);
 
         if (status != pdPASS) {
-            __serial_print("Queue full for sd_card");
+            app.sd_card.policy.dropped_records++;
         }
+    } else {
+        app.sd_card.policy.dropped_records++;
     }
 }

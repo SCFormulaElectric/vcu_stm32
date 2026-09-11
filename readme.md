@@ -17,18 +17,22 @@ This is our repository containing our **Vehicle Control Unit (VCU)** running on 
 
 ---
 
-## Code Structure
-
 ## Documentation
 
 - [VCU Operator Guide](docs/VCU_OPERATOR_GUIDE.md)
 - [EV Inspection Implementation](docs/EV_INSPECTION_IMPLEMENTATION.md)
+
+## Code Structure
 
 We are using FreeRTOS APIs to create different tasks for different components. The bulk of the code can be found under: Core/Src/Tasks/
 
 Data is shared between different tasks via a global data structure *app_data_t*. This global variable is passed to each task, which updates it each time the task is scheduled. Specific implementation can be found in Core/Src/app.c
 
 When tasks need to send CAN messages, they send them safely to the CAN bus queues, which are handled by a single task. Another task is responsible for processing incoming CAN messages.
+
+## CAN Protocol
+
+CAN identifiers, message lengths, and protocol ranges are centralized in `Core/Inc/Peripherals/can_protocol.h`. Task code should reference those definitions instead of adding protocol literals.
 
 ---
 

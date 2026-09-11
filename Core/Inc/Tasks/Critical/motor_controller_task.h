@@ -13,6 +13,10 @@
 #define THROTTLE_DEADZONE 20
 #define motor_control_interval 25
 #define MAX_TORQUE 300 
+/* 25 x 0.1 Nm per 25 ms control interval = 100 Nm/s commissioning ramp.
+ * Torque reductions and all safety inhibits bypass the ramp immediately.
+ * Validate this value on the actual vehicle before expanding the envelope. */
+#define MAX_TORQUE_RISE_X10_PER_CYCLE 25U
 
 #define MC_STACK_SIZE 2*KILOBYTE
 

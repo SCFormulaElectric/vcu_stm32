@@ -2,7 +2,7 @@
 
 Target: STM32F407VET6
 
-Firmware identifier: `inspection-baseline`
+Firmware identifier: `vcu-safety-remediation-2026-08-28`
 
 ## Purpose
 
@@ -36,6 +36,11 @@ The commands in this guide are implemented in the current firmware unless marked
 | `io` | Display digital inputs, outputs, and raw ADC values. |
 | `sensors` | Display the current raw input values once. |
 | `can` | Display CAN bitrate, queue depth, dropped frames, TX errors, and bus-off count. |
+| `bms status` | Display BMS link, layout, and last command acknowledgement. |
+| `bms summary show` | Display the latest decoded BMS values. |
+| `bms config show` | Display the cached summary layout. |
+| `bms config read` | Request the committed layout from the BMS. |
+| `bms signals` | List signals allowed in custom summaries. |
 | `storage` | Display SD-card ownership, active log, and pending log records. |
 | `reset-cause` | Display reset flags recorded by the MCU. |
 | `tasks` | Display the state of each FreeRTOS task. |
@@ -45,12 +50,35 @@ The commands in this guide are implemented in the current firmware unless marked
 | `pedal strength <0-100>` | Set the selected curve strength. Zero is linear; 100 is the full selected curve. |
 | `config show` | Display the active runtime configuration. |
 | `config validate` | Check configuration ranges. |
-| `service begin` | Enable controlled task commands for five minutes while `IDLE`. |
+| `service begin` | Enable the bounded service-mode state while `IDLE`; task suspend/resume remains disabled in the vehicle build. |
 | `service status` | Display service-mode state and remaining time. |
 | `service end` | Disable service mode. |
 | `reboot confirm` | Reset the VCU only when the vehicle is in `IDLE`. |
 | `watch sensors` | Enable periodic raw-input output. |
 | `watch off` | Disable periodic output. |
+
+## BMS telemetry configuration
+
+The VCU reads the BMS `0x6XX` telemetry namespace and requests the active
+five-second summary layout at boot. Layout changes require service mode and a
+staged transaction:
+
+```text
+service begin
+bms config begin
+bms summary count 3
+bms summary slot 0 format state soc pack_voltage pack_current
+bms summary slot 1 min_cell max_cell max_temperature faults_low16
+bms summary slot 2 active_faults latched_faults
+bms config validate
+bms config commit
+bms config save
+```
+
+Wait for each acknowledgement before the next edit; `bms status` shows the
+last opcode, transaction, and result. Commit changes runtime telemetry. Save
+persists it only when BMS charge and discharge outputs are inactive. These
+commands cannot modify BMS safety limits or outputs.
 
 ## Input editing
 
@@ -58,25 +86,17 @@ The commands in this guide are implemented in the current firmware unless marked
 - Backspace deletes the previous character.
 - Commands longer than 95 characters are rejected.
 
-## Service task control
+## Service mode
 
-Task control requires service mode:
+Service mode is retained for bounded bench diagnostics:
 
 ```text
 service begin
-<task_name>=0
-<task_name>=1
+service status
 service end
 ```
 
-The existing task-control syntax is retained for controlled bench work:
-
-```text
-<task_name>=1
-<task_name>=0
-```
-
-Safety tasks cannot be stopped through the CLI. Do not suspend logging, CAN, or control tasks while the vehicle is energized.
+The legacy `<task_name>=0` and `<task_name>=1` syntax is rejected because runtime task suspension can invalidate watchdog and safety assumptions. A separate bench-only build would require a documented test purpose and independent review before re-enabling it.
 
 ## Pedal response
 
@@ -87,7 +107,7 @@ APPS plausibility is checked before the response curve is applied. The response 
 - `balanced` provides a moderate S-shaped response.
 - `progressive` provides finer low-pedal control and more response near full pedal.
 
-The default is `early` at 65 percent strength. These settings are runtime-only and return to defaults after reset. Tune them with the driven wheels removed, then validate launch behavior, low-speed control, and full-pedal torque on the vehicle.
+The commissioning default is `linear` at zero curve strength. These settings are runtime-only and return to defaults after reset. Tune them with the driven wheels removed, then validate launch behavior, low-speed control, the torque rise limit, and full-pedal torque on the vehicle.
 
 Pedal configuration changes are accepted only while the car state is `IDLE`. The command interface can still display and preview the active curve in other states.
 
@@ -157,4 +177,4 @@ These features should be added only with the supporting firmware infrastructure:
 - `events`: requires a bounded event history for state changes, faults, resets, and CAN failures.
 - `time get` and `time set`: require RTC configuration and a defined time-validity policy.
 
-Until those features exist, use USB mass storage to retrieve SD-card files and use the text commands in this guide for diagnostics.
+USB mass-storage ownership of the SD card is disabled in the vehicle build to prevent concurrent filesystem access. Retrieve files with the vehicle de-energized using a separate card reader, and use the text commands in this guide for diagnostics.
