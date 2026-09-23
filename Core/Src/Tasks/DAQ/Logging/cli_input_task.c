@@ -608,6 +608,23 @@ void process_cmd(app_data_t *app, const char *cmd) {
         return;
     }
 
+    if (strcmp(cmd, "bms faults clear") == 0) {
+        uint8_t transaction;
+
+        if (service_mode_active() == 0U) {
+            serial_log("BMS fault clearing requires: service begin");
+            return;
+        }
+        if (app->car_state != CAR_IDLE || app->ready_to_drive != 0U) {
+            serial_log("Refusing BMS fault clear: vehicle is not IDLE");
+            return;
+        }
+        transaction = bms_client_allocate_transaction(&app->bms);
+        (void)queue_bms_command(app, BMS_CAN_CMD_CLEAR_FAULTS,
+            transaction, 0U, 0U);
+        return;
+    }
+
     if (strncmp(cmd, "bms config ", 11) == 0 ||
         strncmp(cmd, "bms summary count ", 18) == 0 ||
         strncmp(cmd, "bms summary slot ", 17) == 0) {
@@ -884,7 +901,7 @@ static void print_help(app_data_t *app, const char *topic) {
         serial_log("SERVICE service begin|status|end; task control requires active service mode");
         serial_log("REBOOT reboot confirm; only allowed while vehicle is IDLE");
         serial_log("WATCH watch sensors | watch off");
-        serial_log("BMS bms status|summary show|config show|config read|signals");
+        serial_log("BMS bms status|summary show|config show|config read|signals|faults clear");
         serial_log("BMS EDIT service begin; bms config begin; bms summary count|slot; bms config validate|commit|save|abort");
         serial_log("HELP help <command>");
         serial_log("SERVICE <task_name>=1; safety tasks cannot be stopped");
@@ -907,6 +924,7 @@ static void print_help(app_data_t *app, const char *topic) {
     } else if (strcmp(topic, "bms") == 0) {
         serial_log("bms status: show link and last acknowledgement");
         serial_log("bms summary show | bms config show | bms config read | bms signals");
+        serial_log("bms faults clear: one-shot request; requires service mode and IDLE");
         serial_log("Editing requires service begin, then bms config begin");
         serial_log("bms summary count <0..16>");
         serial_log("bms summary slot <0..15> <signal...>");

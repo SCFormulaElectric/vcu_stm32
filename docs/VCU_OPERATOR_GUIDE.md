@@ -41,6 +41,7 @@ The commands in this guide are implemented in the current firmware unless marked
 | `bms config show` | Display the cached summary layout. |
 | `bms config read` | Request the committed layout from the BMS. |
 | `bms signals` | List signals allowed in custom summaries. |
+| `bms faults clear` | Send one BMS fault-clear CAN command; requires service mode and `IDLE`. |
 | `storage` | Display SD-card ownership, active log, and pending log records. |
 | `reset-cause` | Display reset flags recorded by the MCU. |
 | `tasks` | Display the state of each FreeRTOS task. |
@@ -79,6 +80,22 @@ Wait for each acknowledgement before the next edit; `bms status` shows the
 last opcode, transaction, and result. Commit changes runtime telemetry. Save
 persists it only when BMS charge and discharge outputs are inactive. These
 commands cannot modify BMS safety limits or outputs.
+
+To manually clear the BMS historical fault latch, first correct the fault
+cause, place the VCU in `IDLE`, and enter:
+
+```text
+service begin
+bms faults clear
+bms status
+```
+
+Each `bms faults clear` entry queues exactly one `0x5E0` CAN frame; no periodic
+task retransmits it. The BMS acknowledgement echoes the command transaction.
+Clearing does not bypass a live safety condition or enable an output. The BMS
+returns to `INIT` with output requests deasserted and immediately reevaluates
+all measurements; an active fault relatches under its normal detection and
+persistence rules.
 
 ## Input editing
 
@@ -165,7 +182,10 @@ If the VCU reports an unexpected fault:
 4. Correct the physical or software cause.
 5. Repeat the pre-drive sequence.
 
-Faults are not cleared by the CLI. Reset and recovery behavior must follow the vehicle's electrical safety procedure.
+Only the BMS historical latch can be cleared by the service-mode
+`bms faults clear` command. VCU, inverter, and physical shutdown faults are not
+cleared by this command. Reset and recovery behavior must still follow the
+vehicle's electrical safety procedure.
 
 ## Planned extensions
 

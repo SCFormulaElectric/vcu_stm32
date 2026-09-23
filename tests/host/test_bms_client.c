@@ -65,10 +65,34 @@ static void test_layout_validation(void)
     assert(bms_client_layout_is_valid(&client.layout) == 0U);
 }
 
+static void test_clear_faults_command_and_response(void)
+{
+    bms_client_t client;
+    uint8_t command[8];
+    uint8_t follow_up[8] = {0};
+    const uint8_t response[8] = {BMS_CAN_PROTOCOL_VERSION,
+        BMS_CAN_CMD_CLEAR_FAULTS, 9U, BMS_CAN_STATUS_OK, 1U, 2U, 50U, 0U};
+
+    bms_client_initialize(&client);
+    bms_client_build_command(BMS_CAN_CMD_CLEAR_FAULTS, 9U, 0U, 0U,
+        command);
+    assert(command[0] == BMS_CAN_PROTOCOL_VERSION);
+    assert(command[1] == BMS_CAN_CMD_CLEAR_FAULTS);
+    assert(command[2] == 9U);
+    assert(command[3] == 0U && command[4] == 0U && command[5] == 0U &&
+        command[6] == 0U && command[7] == 0U);
+    assert(bms_client_process_frame(&client, BMS_CAN_CONFIG_RESPONSE_ID, 8U,
+        response, 10U, follow_up) == 0U);
+    assert(client.last_opcode == BMS_CAN_CMD_CLEAR_FAULTS);
+    assert(client.last_transaction == 9U);
+    assert(client.last_status == BMS_CAN_STATUS_OK);
+}
+
 int main(void)
 {
     test_default_summary_decode();
     test_layout_readback_sequence();
     test_layout_validation();
+    test_clear_faults_command_and_response();
     return 0;
 }

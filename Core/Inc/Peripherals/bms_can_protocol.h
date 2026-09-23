@@ -19,6 +19,7 @@
 typedef enum {
     BMS_CAN_CMD_READ_CONFIG = 0x01,
     BMS_CAN_CMD_READ_SLOT = 0x02,
+    BMS_CAN_CMD_CLEAR_FAULTS = 0x03,
     BMS_CAN_CMD_BEGIN = 0x10,
     BMS_CAN_CMD_SET_COUNT = 0x11,
     BMS_CAN_CMD_SET_SLOT = 0x12,
@@ -36,7 +37,8 @@ typedef enum {
     BMS_CAN_STATUS_BAD_VALUE,
     BMS_CAN_STATUS_NO_TRANSACTION,
     BMS_CAN_STATUS_PERSISTENCE_BLOCKED,
-    BMS_CAN_STATUS_PERSISTENCE_ERROR
+    BMS_CAN_STATUS_PERSISTENCE_ERROR,
+    BMS_CAN_STATUS_BUSY
 } bms_can_status_t;
 
 /* Signal IDs occupy four bits in a slot descriptor. Zero terminates a slot. */
